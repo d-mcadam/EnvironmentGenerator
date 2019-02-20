@@ -9,8 +9,19 @@ public class GeneratorToolBase : ScriptableWizard {
     //constant variables
     private const string _menuDropDownName = "Custom Generator Tool";
     private const string _terrainTag = "Base Terrain";
-    
-    
+
+    //wizard form fields
+    public int _objectQuantity = 1;
+
+    public int _xStartPoint = 1;
+    public int _yStartPoint = 1;
+    public int _zStartPoint = 1;
+
+    public int _xAxisRange = 1;
+    public int _yAxisRange = 1;
+    public int _zAxisRange = 1;
+
+
     private static void CreateTerrainTagIfNotPresent()
     {
         //get tag manager
@@ -45,6 +56,12 @@ public class GeneratorToolBase : ScriptableWizard {
         GameObject terrain = Terrain.CreateTerrainGameObject(terrainData);
         terrain.tag = _terrainTag;
 
+    }
+    
+    private static void GenerateObject(int x, int y, int z)
+    {
+        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        cube.transform.position = new Vector3(x, y, z);
     }
 
 
@@ -97,6 +114,14 @@ public class GeneratorToolBase : ScriptableWizard {
 
     void OnWizardCreate()
     {
-        
+        System.Random rnd = new System.Random();
+        for (int i = 0; i < _objectQuantity; i++)
+        {
+            int x = rnd.Next(_xStartPoint, _xStartPoint + _xAxisRange);
+            int y = rnd.Next(_yStartPoint, _yStartPoint + _yAxisRange);
+            int z = rnd.Next(_zStartPoint, _zStartPoint + _zAxisRange);
+
+            GenerateObject(x, y, z);
+        }
     }
 }
