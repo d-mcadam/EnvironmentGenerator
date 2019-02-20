@@ -5,6 +5,9 @@ using System.ComponentModel;
 
 public class StringConstants {
 
+    //constant tags
+    public const string BaseTerrainTag = "Base Terrain";
+
     //base menu titles
     public const string CustomGeneratorToolMenuTitle = "Custom Generator Tool";
 
