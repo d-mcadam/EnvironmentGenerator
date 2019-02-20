@@ -7,7 +7,6 @@ using System;
 public class GeneratorToolBase : ScriptableWizard {
 
     //constant variables
-    private const string _menuDropDownName = "Custom Generator Tool";
     private const string _terrainTag = "Base Terrain";
 
     //wizard form fields
@@ -66,7 +65,7 @@ public class GeneratorToolBase : ScriptableWizard {
     }
 
 
-    [MenuItem(_menuDropDownName + "/Generate Terrain")]
+    [MenuItem(StringConstants.CustomGeneratorToolMenuTitle + "/Generate Terrain")]
     static void GenerateTerrainButton()
     {
         
@@ -107,7 +106,7 @@ public class GeneratorToolBase : ScriptableWizard {
 
     }
 
-    [MenuItem(_menuDropDownName + "/Generate Objects")]
+    [MenuItem(StringConstants.CustomGeneratorToolMenuTitle + "/Generate Objects")]
     static void GenerateObjectsWizard()
     {
         ScriptableWizard.DisplayWizard<GeneratorToolBase>("Generate Objects", "Generate");
