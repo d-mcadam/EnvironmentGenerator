@@ -60,8 +60,9 @@ public class GeneratorToolBase : ScriptableWizard {
     
     private static void GenerateObject(int x, int y, int z)
     {
-        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        cube.transform.position = new Vector3(x, y, z);
+        GameObject cube = new GameObject();
+        //GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        //cube.transform.position = new Vector3(x, y, z);
     }
 
 
