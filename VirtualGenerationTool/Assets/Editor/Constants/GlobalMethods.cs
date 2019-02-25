@@ -33,4 +33,15 @@ public class GlobalMethods {
         tagManager.ApplyModifiedProperties();
 
     }
+
+    public static void GenerateObjectsOnTerrain(GameObject terrain, int quantity, Vector3 start_point, Vector3 dimensions)
+    {
+
+    }
+
+    public static void GenerateObjectsOnTerrains(GameObject[] terrains, int quantity, Vector3 start_point, Vector3 dimensions)
+    {
+
+    }
+
 }

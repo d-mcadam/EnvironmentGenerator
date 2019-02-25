@@ -21,6 +21,7 @@ public class StringConstants {
     //object generator text
     public const string GenerateObject_BaseButtonText = "Generate Objects...";
     public const string GenerateObject_OnTerrain_SubButton = "On Terrain...";
+    public const string GenerateObject_OnTerrain_WindowTitle = "Generate Objects On A Specified Terrain";
     public const string GenerateObject_LinkByTag_SubButton = "Search by Tag";
     public const string GenerateObject_LinkByName_SubButton = "Search by Name";
     public const string GenerateObject_LinkByObject_SubButton = "Select from Hierarchy";
