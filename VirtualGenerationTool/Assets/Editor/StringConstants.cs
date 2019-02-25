@@ -8,9 +8,21 @@ public class StringConstants {
     //constant tags
     public const string BaseTerrainTag = "Base Terrain";
 
-    //base menu titles
-    public const string CustomGeneratorToolMenuTitle = "Custom Generator Tool";
+    //constant strings
+    public const string Create = "Create";
 
-    //terrain generator button text
-    public const string GenerateTerrainButtonText = "Generate Terrain...";
+    //base menu title
+    public const string CustomGeneratorTool_MenuTitle = "Custom Generator Tool";
+
+    //terrain generator text
+    public const string GenerateTerrain_ButtonText = "Generate Terrain...";
+    public const string GenerateTerrain_WindowTitle = "Terrain Details";
+
+    //object generator text
+    public const string GenerateObject_BaseButtonText = "Generate Objects...";
+    public const string GenerateObject_OnTerrain_SubButton = "On Terrain...";
+    public const string GenerateObject_LinkByTag_SubButton = "Search by Tag";
+    public const string GenerateObject_LinkByName_SubButton = "Search by Name";
+    public const string GenerateObject_LinkByObject_SubButton = "Select from Hierarchy";
+
 }

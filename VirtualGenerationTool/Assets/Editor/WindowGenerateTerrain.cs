@@ -3,21 +3,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-public class TerrainObjectGenerator : ScriptableWizard {
-
-    public string _objectTitle = "Title";
+public class WindowGenerateTerrain : ScriptableWizard {
+    
+    [Tooltip("The name given to the terrain object")]
+    public string _objectTitle = "Enter Title Here";
+    [Tooltip("If checked, the new object will be tagged as \"Base Terrain\"")]
     public bool _labelAsBaseTerrain = false;
-
+    
     public int _x = 0;
     public int _y = 0;
     public int _z = 0;
-
-	[MenuItem(StringConstants.CustomGeneratorToolMenuTitle + "/" + StringConstants.GenerateTerrainButtonText)]
-    static void GenerateTerrainButton()
-    {
-        ScriptableWizard.DisplayWizard<TerrainObjectGenerator>("Terrain Details", "Create");
-    }
-
+    
     void OnWizardCreate()
     {
 
@@ -28,7 +24,7 @@ public class TerrainObjectGenerator : ScriptableWizard {
         terrain.name = _objectTitle;
         if (_labelAsBaseTerrain)
         {
-            
+
             try
             {
                 GameObject.FindGameObjectWithTag(StringConstants.BaseTerrainTag);
@@ -43,4 +39,5 @@ public class TerrainObjectGenerator : ScriptableWizard {
         }
 
     }
+
 }

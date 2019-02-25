@@ -28,7 +28,7 @@ public class GeneratorToolBase : ScriptableWizard {
     }
 
     
-    [MenuItem(StringConstants.CustomGeneratorToolMenuTitle + "/Generate Objects")]
+    [MenuItem(StringConstants.CustomGeneratorTool_MenuTitle + "/Generate Objects")]
     static void GenerateObjectsWizard()
     {
         ScriptableWizard.DisplayWizard<GeneratorToolBase>("Generate Objects", "Generate");
