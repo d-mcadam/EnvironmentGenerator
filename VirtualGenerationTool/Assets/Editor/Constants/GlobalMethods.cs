@@ -39,11 +39,23 @@ public class GlobalMethods {
 
         for (int i = 0; i < quantity; i++)
         {
+
             float x = Random.Range(start_point.x, start_point.x + dimensions.x);
             float z = Random.Range(start_point.z, start_point.z + dimensions.z);
 
-            float y = terrain.SampleHeight(new Vector3(0, 0, 0));
-            Debug.Log(y);
+            float y = terrain.SampleHeight(new Vector3(x, 0, z));
+            
+            while (y < start_point.y || y > start_point.y + dimensions.y)
+            {
+                x = Random.Range(start_point.x, start_point.x + dimensions.x);
+                z = Random.Range(start_point.z, start_point.z + dimensions.z);
+
+                y = terrain.SampleHeight(new Vector3(x, 0, z));
+            }
+
+            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cube.transform.position = new Vector3(x, y, z);
+
         }
 
     }
