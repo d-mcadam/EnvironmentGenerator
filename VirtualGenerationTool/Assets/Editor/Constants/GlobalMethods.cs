@@ -36,7 +36,7 @@ public class GlobalMethods {
     
     public static void GenerateObjectsOnTerrain(Terrain terrain, int quantity, Vector3 start_point, Vector3 dimensions)
     {
-
+        
         for (int i = 0; i < quantity; i++)
         {
 
@@ -52,9 +52,9 @@ public class GlobalMethods {
 
                 y = terrain.SampleHeight(new Vector3(x, 0, z));
             }
-
+            
             GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cube.transform.position = new Vector3(x, y, z);
+            cube.transform.position = new Vector3(x, y, z) + terrain.transform.position;
 
         }
 
