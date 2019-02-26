@@ -80,4 +80,58 @@ public class GlobalMethods {
 
     }
 
+    public static Vector3 CheckStartingPoint(Vector3 start_point, Terrain terrain)
+    {
+
+        Vector3 terrainSize = terrain.terrainData.size;
+
+        if (start_point.x > terrainSize.x)
+            start_point.x = terrainSize.x - 1;
+
+        if (start_point.x < 0)
+            start_point.x = 0;
+
+        if (start_point.y > terrainSize.y)
+            start_point.y = terrainSize.y - 1;
+
+        if (start_point.y < 0)
+            start_point.y = 0;
+
+        if (start_point.z > terrainSize.z)
+            start_point.z = terrainSize.z - 1;
+
+        if (start_point.z < 0)
+            start_point.z = 0;
+
+        return start_point;
+
+    }
+
+    public static Vector3 CheckDimensionsAgainstTerrain(Vector3 start_point, Vector3 dimensions, Terrain terrain)
+    {
+
+        Vector3 terrainSize = terrain.terrainData.size;
+
+        if (start_point.x + dimensions.x > terrainSize.x)
+            dimensions.x = terrainSize.x - start_point.x;
+
+        if (dimensions.x < 0)
+            dimensions.x = 0;
+
+        if (start_point.y + dimensions.y > terrainSize.y)
+            dimensions.y = terrainSize.y - start_point.y;
+
+        if (dimensions.y < 0)
+            dimensions.y = 0;
+        
+        if (start_point.z + dimensions.z > terrainSize.z)
+            dimensions.z = terrainSize.z - start_point.z;
+
+        if (dimensions.z < 0)
+            dimensions.z = 0;
+        
+        return dimensions;
+
+    }
+
 }
