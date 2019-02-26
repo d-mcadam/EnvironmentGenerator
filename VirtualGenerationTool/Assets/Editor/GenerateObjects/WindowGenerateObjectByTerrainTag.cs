@@ -8,11 +8,11 @@ public class WindowGenerateObjectByTerrainTag : ScriptableWizard
 
     public string _tag = "Enter Tag Here";
 
-    public int _objectQuantity = 1;
+    public int _objectQuantity = 10;
 
     public Vector3 _startPosition = new Vector3();
 
-    public Vector3 _dimensions = new Vector3();
+    public Vector3 _dimensions = new Vector3(100, 100, 100);
 
     void OnWizardCreate()
     {
@@ -38,7 +38,12 @@ public class WindowGenerateObjectByTerrainTag : ScriptableWizard
         {
             if (terrains.Length > 1)
             {
-                GlobalMethods.GenerateObjectsOnTerrains(terrains, _objectQuantity, _startPosition, _dimensions);
+                
+                GlobalMethods.GenerateObjectsOnTerrains(terrains, _objectQuantity, _startPosition, _dimensions,
+                    EditorUtility.DisplayDialog("Multiple Terrains found", 
+                    "Would you like to generate the maximum number of objects on each terrain OR distribute them across all terrains?", 
+                    "Maximum Per Terrain", "Distribute Across Terrains"));
+
             }
             else
             {

@@ -60,12 +60,22 @@ public class GlobalMethods {
 
     }
 
-    public static void GenerateObjectsOnTerrains(Terrain[] terrains, int quantity, Vector3 start_point, Vector3 dimensions)
+    public static void GenerateObjectsOnTerrains(Terrain[] terrains, int quantity, Vector3 start_point, Vector3 dimensions, bool quantityPerTerrain)
     {
 
-        for (int i = 0; i < quantity; i++)
+        if (quantityPerTerrain)
         {
-
+            for (int i = 0; i < terrains.Length; i++)
+            {
+                GenerateObjectsOnTerrain(terrains[i], quantity, start_point, dimensions);
+            }
+        }
+        else
+        {
+            for (int i = 0; i < quantity; i++)
+            {
+                GenerateObjectsOnTerrain(terrains[Random.Range(0, terrains.Length)], 1, start_point, dimensions);
+            }
         }
 
     }
