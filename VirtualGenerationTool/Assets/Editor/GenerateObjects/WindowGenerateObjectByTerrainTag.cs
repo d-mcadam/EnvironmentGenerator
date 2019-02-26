@@ -27,8 +27,8 @@ public class WindowGenerateObjectByTerrainTag : ScriptableWizard
         }
 
         GameObject[] terrains = GameObject.FindGameObjectsWithTag(_tag);
-
-        if (terrains != null)
+        
+        if (terrains.Length > 0)
         {
             if (terrains.Length > 1)
             {
@@ -41,7 +41,7 @@ public class WindowGenerateObjectByTerrainTag : ScriptableWizard
         }
         else
         {
-            //didnt find anything
+            EditorUtility.DisplayDialog("No terrain found by Tag", "Unable to find a terrain with tag \"" + _tag + "\"", "OK");
         }
 
     }

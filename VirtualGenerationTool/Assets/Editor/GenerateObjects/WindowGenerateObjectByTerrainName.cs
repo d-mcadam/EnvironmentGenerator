@@ -25,7 +25,7 @@ public class WindowGenerateObjectByTerrainName : ScriptableWizard
         }
         else
         {
-            //didnt find anything
+            EditorUtility.DisplayDialog("No terrain found by Name", "Unable to find a terrain with name \"" + _name + "\"", "OK");
         }
 
     }

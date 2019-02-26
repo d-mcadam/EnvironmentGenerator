@@ -39,7 +39,7 @@ public class ToolbarMenuBase : ScriptableWizard {
         StringConstants.GenerateObject_LinkByObject_SubButton, false, 13)]
     static void GenerateObjectOnTerrainByObjectWizard()
     {
-        DisplayWizard<WindowGenerateObjecyByTerrainObject>
+        DisplayWizard<WindowGenerateObjectByTerrainObject>
             (StringConstants.GenerateObject_OnTerrain_WindowTitle, StringConstants.Create);
     }
 }
