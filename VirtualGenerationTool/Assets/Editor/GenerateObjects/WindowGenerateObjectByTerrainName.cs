@@ -14,20 +14,15 @@ public class WindowGenerateObjectByTerrainName : ScriptableWizard
 
     public Vector3 _dimensions = new Vector3();
 
+    void OnWizardUpdate()
+    {
+        isValid = GameObject.Find(_name) != null;
+    }
+
     void OnWizardCreate()
     {
-
         GameObject terrain = GameObject.Find(_name);
-
-        if (terrain != null)
-        {
-            GlobalMethods.GenerateObjectsOnTerrain(terrain, _objectQuantity, _startPosition, _dimensions);
-        }
-        else
-        {
-            EditorUtility.DisplayDialog("No terrain found by Name", "Unable to find a terrain with name \"" + _name + "\"", "OK");
-        }
-
+        GlobalMethods.GenerateObjectsOnTerrain(terrain, _objectQuantity, _startPosition, _dimensions);
     }
 
 }
