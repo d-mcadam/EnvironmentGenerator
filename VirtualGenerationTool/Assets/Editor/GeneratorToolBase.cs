@@ -27,13 +27,6 @@ public class GeneratorToolBase : ScriptableWizard {
         //cube.transform.position = new Vector3(x, y, z);
     }
 
-    
-    [MenuItem(StringConstants.CustomGeneratorToolMenuTitle + "/Generate Objects")]
-    static void GenerateObjectsWizard()
-    {
-        ScriptableWizard.DisplayWizard<GeneratorToolBase>("Generate Objects", "Generate");
-    }
-
     void OnWizardCreate()
     {
         System.Random rnd = new System.Random();

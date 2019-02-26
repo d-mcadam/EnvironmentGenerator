@@ -4,8 +4,8 @@ using UnityEditor;
 using UnityEngine;
 
 public class GlobalMethods {
-
-	public static void CreateTagIfNotPresent(string s)
+    
+    public static void CreateTagIfNotPresent(string s)
     {
 
         //get tag manager
@@ -33,4 +33,29 @@ public class GlobalMethods {
         tagManager.ApplyModifiedProperties();
 
     }
+    
+    public static void GenerateObjectsOnTerrain(Terrain terrain, int quantity, Vector3 start_point, Vector3 dimensions)
+    {
+
+        for (int i = 0; i < quantity; i++)
+        {
+            float x = Random.Range(start_point.x, start_point.x + dimensions.x);
+            float z = Random.Range(start_point.z, start_point.z + dimensions.z);
+
+            float y = terrain.SampleHeight(new Vector3(0, 0, 0));
+            Debug.Log(y);
+        }
+
+    }
+
+    public static void GenerateObjectsOnTerrains(Terrain[] terrains, int quantity, Vector3 start_point, Vector3 dimensions)
+    {
+
+        for (int i = 0; i < quantity; i++)
+        {
+
+        }
+
+    }
+
 }
