@@ -26,8 +26,14 @@ public class WindowGenerateObjectByTerrainTag : ScriptableWizard
             GlobalMethods.CreateTagIfNotPresent(_tag);
         }
 
-        GameObject[] terrains = GameObject.FindGameObjectsWithTag(_tag);
-        
+        GameObject[] terrainObjects = GameObject.FindGameObjectsWithTag(_tag);
+        Terrain[] terrains = new Terrain[terrainObjects.Length];
+
+        for (int i = 0; i < terrainObjects.Length; i++)
+        {
+            terrains[i] = terrainObjects[i].GetComponent<Terrain>();
+        }
+             
         if (terrains.Length > 0)
         {
             if (terrains.Length > 1)

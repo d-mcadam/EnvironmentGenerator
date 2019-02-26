@@ -4,15 +4,7 @@ using UnityEngine;
 using UnityEditor;
 
 public class ToolbarMenuBase : ScriptableWizard {
-
-	[MenuItem(StringConstants.CustomGeneratorTool_MenuTitle + "/" + 
-        StringConstants.GenerateTerrain_ButtonText, false, 1)]
-    static void GenerateTerrainWizard()
-    {
-        DisplayWizard<WindowGenerateTerrain>
-            (StringConstants.GenerateTerrain_WindowTitle, StringConstants.Create);
-    }
-
+    
     [MenuItem(StringConstants.CustomGeneratorTool_MenuTitle + "/" +
         StringConstants.GenerateObject_BaseButtonText + "/" +
         StringConstants.GenerateObject_OnTerrain_SubButton + "/" +

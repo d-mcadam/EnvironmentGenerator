@@ -5,7 +5,7 @@ using UnityEditor;
 
 public class WindowGenerateObjectByTerrainObject : ScriptableWizard
 {
-    public GameObject _terrainTarget;
+    public Terrain _terrainTarget;
 
     public int _objectQuantity = 1;
 
@@ -16,7 +16,7 @@ public class WindowGenerateObjectByTerrainObject : ScriptableWizard
     void OnWizardUpdate()
     {
         //'OK' button is enabled if the target is NOT NULL and the target is a TERRAIN object
-        isValid = _terrainTarget != null && _terrainTarget.GetComponent<Terrain>() != null;
+        isValid = _terrainTarget;
     }
 
     void OnWizardCreate()

@@ -16,12 +16,12 @@ public class WindowGenerateObjectByTerrainName : ScriptableWizard
 
     void OnWizardUpdate()
     {
-        isValid = GameObject.Find(_name) != null;
+        isValid = GameObject.Find(_name) && GameObject.Find(_name).GetComponent<Terrain>();
     }
 
     void OnWizardCreate()
     {
-        GameObject terrain = GameObject.Find(_name);
+        Terrain terrain = GameObject.Find(_name).GetComponent<Terrain>();
         GlobalMethods.GenerateObjectsOnTerrain(terrain, _objectQuantity, _startPosition, _dimensions);
     }
 
