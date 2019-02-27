@@ -52,10 +52,12 @@ public class GlobalMethods {
 
                 y = terrain.SampleHeight(new Vector3(x, 0, z));
             }
-            
+
             GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
             cube.transform.position = new Vector3(x, y, z) + terrain.transform.position;
 
+            Object[] prefab = AssetDatabase.LoadAllAssetsAtPath("Assets/Prefabs/BlueCube.prefab");
+            Debug.Log(prefab.Length);
         }
 
     }

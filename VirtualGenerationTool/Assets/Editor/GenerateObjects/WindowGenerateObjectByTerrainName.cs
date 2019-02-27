@@ -16,6 +16,16 @@ public class WindowGenerateObjectByTerrainName : ScriptableWizard
 
     void OnWizardUpdate()
     {
+
+        if (_dimensions.x < 1)
+            _dimensions.x = 1;
+
+        if (_dimensions.y < 1)
+            _dimensions.y = 1;
+
+        if (_dimensions.z < 1)
+            _dimensions.z = 1;
+
         isValid = GameObject.Find(_name) && GameObject.Find(_name).GetComponent<Terrain>();
 
         if (!isValid)
@@ -24,6 +34,7 @@ public class WindowGenerateObjectByTerrainName : ScriptableWizard
         _startPosition = GlobalMethods.CheckStartingPoint(_startPosition, GameObject.Find(_name).GetComponent<Terrain>());
 
         _dimensions = GlobalMethods.CheckDimensionsAgainstTerrain(_startPosition, _dimensions, GameObject.Find(_name).GetComponent<Terrain>());
+
     }
 
     void OnWizardCreate()

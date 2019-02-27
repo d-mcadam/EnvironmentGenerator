@@ -14,6 +14,20 @@ public class WindowGenerateObjectByTerrainTag : ScriptableWizard
 
     public Vector3 _dimensions = new Vector3(100, 100, 100);
 
+    void OnWizardUpdate()
+    {
+
+        if (_dimensions.x < 1)
+            _dimensions.x = 1;
+
+        if (_dimensions.y < 1)
+            _dimensions.y = 1;
+
+        if (_dimensions.z < 1)
+            _dimensions.z = 1;
+
+    }
+
     void OnWizardCreate()
     {
 

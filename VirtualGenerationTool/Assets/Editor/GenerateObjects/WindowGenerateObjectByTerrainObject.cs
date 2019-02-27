@@ -16,6 +16,16 @@ public class WindowGenerateObjectByTerrainObject : ScriptableWizard
 
     void OnWizardUpdate()
     {
+
+        if (_dimensions.x < 1)
+            _dimensions.x = 1;
+
+        if (_dimensions.y < 1)
+            _dimensions.y = 1;
+
+        if (_dimensions.z < 1)
+            _dimensions.z = 1;
+
         //'OK' button is enabled if the target is NOT NULL
         isValid = _terrainTarget;
 
@@ -26,6 +36,7 @@ public class WindowGenerateObjectByTerrainObject : ScriptableWizard
         _startPosition = GlobalMethods.CheckStartingPoint(_startPosition, _terrainTarget);
 
         _dimensions = GlobalMethods.CheckDimensionsAgainstTerrain(_startPosition, _dimensions, _terrainTarget);
+
     }
 
     void OnWizardCreate()
