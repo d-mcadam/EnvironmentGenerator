@@ -74,6 +74,7 @@ public class GlobalMethods {
         {
             for (int i = 0; i < quantity; i++)
             {
+                //can possible add features where they are distributed evenly or more are distributed on one terrain than the other
                 GenerateObjectsOnTerrain(terrains[Random.Range(0, terrains.Length)], 1, start_point, dimensions);
             }
         }

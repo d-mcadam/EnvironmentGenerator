@@ -23,7 +23,13 @@ public class WindowGenerateObjectByTerrainTag : ScriptableWizard
         }
         catch(UnityException e)
         {
-            GlobalMethods.CreateTagIfNotPresent(_tag);
+
+            if (EditorUtility.DisplayDialog("Unidentified Tag",
+                    "Tag \"" + _tag + "\" does not exist in this project, would you like to create it?", "Yes", "No"))
+                GlobalMethods.CreateTagIfNotPresent(_tag);
+            else
+                return;
+
         }
 
         GameObject[] terrainObjects = GameObject.FindGameObjectsWithTag(_tag);
