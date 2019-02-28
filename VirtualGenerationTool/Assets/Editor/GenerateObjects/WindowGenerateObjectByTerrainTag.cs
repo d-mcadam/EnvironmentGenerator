@@ -72,7 +72,7 @@ public class WindowGenerateObjectByTerrainTag : ScriptableWizard
         }
         else
         {
-            EditorUtility.DisplayDialog("No terrain found by Tag", "Unable to find a terrain with tag \"" + _tag + "\"", "OK");
+            EditorUtility.DisplayDialog("No terrain found", "Unable to find a terrain with tag \"" + _tag + "\"", "OK");
         }
 
     }

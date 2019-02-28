@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using System.IO;
 
 public class GlobalMethods {
     
@@ -56,8 +57,19 @@ public class GlobalMethods {
             GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
             cube.transform.position = new Vector3(x, y, z) + terrain.transform.position;
 
-            Object[] prefab = AssetDatabase.LoadAllAssetsAtPath("Assets/Prefabs/BlueCube.prefab");
-            Debug.Log(prefab.Length);
+            List<string> assetFilePaths = GetPrefabFilePaths();
+            Debug.Log(assetFilePaths.Count);
+            foreach (string s in assetFilePaths)
+            {
+                Debug.Log(s);
+            }
+
+            //Object[] prefab = AssetDatabase.LoadAllAssetsAtPath("Assets/Prefabs/BlueCapsule.prefab");
+            //Debug.Log(prefab.Length);
+            //foreach (Object obj in prefab)
+            //{
+            //    Debug.Log(obj.name);
+            //}
         }
 
     }
@@ -135,6 +147,38 @@ public class GlobalMethods {
         
         return dimensions;
 
+    }
+
+    private static List<string> GetPrefabFilePaths()
+    {
+        //get a list of all the asset file paths
+        List<string> filePaths = new List<string>();
+        foreach (string s in Directory.GetFiles("Assets/Prefabs/"))
+        {
+            filePaths.Add(s);
+        }
+
+        //get a collection of file paths to remove (cannot remove from 'filePaths' as Concurrent Modification Exeption thrown)
+        List<string> stringsToRemove = new List<string>();
+        foreach (string s in filePaths)
+        {
+            //remove any meta files
+            if (s.Contains(".prefab.meta"))
+                stringsToRemove.Add(s);
+
+            //remove anything that isn't a prefab
+            if (!s.Contains(".prefab"))
+                stringsToRemove.Add(s);
+        }
+
+        //remove the unwanted file paths
+        foreach (string s in stringsToRemove)
+        {
+            filePaths.Remove(s);
+        }
+
+        //return 
+        return filePaths;
     }
 
 }
