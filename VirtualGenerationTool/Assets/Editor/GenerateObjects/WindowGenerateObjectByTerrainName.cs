@@ -16,16 +16,7 @@ public class WindowGenerateObjectByTerrainName : ScriptableWizard
 
     void OnWizardUpdate()
     {
-
-        if (_dimensions.x < 1)
-            _dimensions.x = 1;
-
-        if (_dimensions.y < 1)
-            _dimensions.y = 1;
-
-        if (_dimensions.z < 1)
-            _dimensions.z = 1;
-
+        
         isValid = GameObject.Find(_name) && GameObject.Find(_name).GetComponent<Terrain>();
 
         if (!isValid)

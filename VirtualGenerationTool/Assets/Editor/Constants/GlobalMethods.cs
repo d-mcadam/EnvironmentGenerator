@@ -5,6 +5,9 @@ using UnityEngine;
 using System.IO;
 
 public class GlobalMethods {
+
+    private static int _loopFailCount = 0;
+    private const int _maxLoopFail = 10000000;//10 million times, results in acceptable lock-out time
     
     public static void CreateTagIfNotPresent(string s)
     {
@@ -37,39 +40,45 @@ public class GlobalMethods {
     
     public static void GenerateObjectsOnTerrain(Terrain terrain, int quantity, Vector3 start_point, Vector3 dimensions)
     {
-        
+
         for (int i = 0; i < quantity; i++)
         {
+            _loopFailCount = 0;
 
+            //generate a random X and Z coordinate between specified boundaries
             float x = Random.Range(start_point.x, start_point.x + dimensions.x);
             float z = Random.Range(start_point.z, start_point.z + dimensions.z);
 
+            //get the height (Y) of the terrain at the X and Z coordinate
             float y = terrain.SampleHeight(new Vector3(x, 0, z));
-            
+
+            //check if the Y coordinate is outside specified boundaries
             while (y < start_point.y || y > start_point.y + dimensions.y)
             {
+                //continue to generate values until the Y coordinate is within boundaries
                 x = Random.Range(start_point.x, start_point.x + dimensions.x);
                 z = Random.Range(start_point.z, start_point.z + dimensions.z);
 
                 y = terrain.SampleHeight(new Vector3(x, 0, z));
+
+                if (++_loopFailCount >= _maxLoopFail)
+                {
+                    EditorUtility.DisplayDialog("Loop error",
+                        "Unable to generate as failed to identify suitable vector " + _maxLoopFail + " times", "OK");
+                    return;
+                }
             }
 
-            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cube.transform.position = new Vector3(x, y, z) + terrain.transform.position;
-
+            //get all prefab assets
             List<string> assetFilePaths = GetPrefabFilePaths();
-            Debug.Log(assetFilePaths.Count);
-            foreach (string s in assetFilePaths)
+            Object[] prefabs = new Object[assetFilePaths.Count];
+            for (int j = 0; j < prefabs.Length; j++)
             {
-                Debug.Log(s);
+                prefabs[j] = AssetDatabase.LoadAssetAtPath(assetFilePaths[j], typeof(GameObject));
             }
 
-            //Object[] prefab = AssetDatabase.LoadAllAssetsAtPath("Assets/Prefabs/BlueCapsule.prefab");
-            //Debug.Log(prefab.Length);
-            //foreach (Object obj in prefab)
-            //{
-            //    Debug.Log(obj.name);
-            //}
+            GameObject prefab = (GameObject)PrefabUtility.InstantiatePrefab(prefabs[0]);
+            prefab.transform.position = new Vector3(x, y, z) + terrain.transform.position;
         }
 
     }
@@ -100,20 +109,20 @@ public class GlobalMethods {
 
         Vector3 terrainSize = terrain.terrainData.size;
 
-        if (start_point.x > terrainSize.x)
-            start_point.x = terrainSize.x - 1;
+        if (start_point.x >= terrainSize.x)
+            start_point.x = terrainSize.x;
 
         if (start_point.x < 0)
             start_point.x = 0;
 
-        if (start_point.y > terrainSize.y)
-            start_point.y = terrainSize.y - 1;
+        if (start_point.y >= terrainSize.y)
+            start_point.y = terrainSize.y;
 
         if (start_point.y < 0)
             start_point.y = 0;
 
-        if (start_point.z > terrainSize.z)
-            start_point.z = terrainSize.z - 1;
+        if (start_point.z >= terrainSize.z)
+            start_point.z = terrainSize.z;
 
         if (start_point.z < 0)
             start_point.z = 0;
@@ -130,25 +139,25 @@ public class GlobalMethods {
         if (start_point.x + dimensions.x > terrainSize.x)
             dimensions.x = terrainSize.x - start_point.x;
 
-        if (dimensions.x < 0)
-            dimensions.x = 0;
+        if (dimensions.x < 1)
+            dimensions.x = 1;
 
         if (start_point.y + dimensions.y > terrainSize.y)
             dimensions.y = terrainSize.y - start_point.y;
 
-        if (dimensions.y < 0)
-            dimensions.y = 0;
+        if (dimensions.y < 1)
+            dimensions.y = 1;
         
         if (start_point.z + dimensions.z > terrainSize.z)
             dimensions.z = terrainSize.z - start_point.z;
 
-        if (dimensions.z < 0)
-            dimensions.z = 0;
+        if (dimensions.z < 1)
+            dimensions.z = 1;
         
         return dimensions;
 
     }
-
+    
     private static List<string> GetPrefabFilePaths()
     {
         //get a list of all the asset file paths
@@ -176,8 +185,8 @@ public class GlobalMethods {
         {
             filePaths.Remove(s);
         }
-
-        //return 
+        
+        //return ONLY prefab file paths (can be loaded with AssetDatabase.LoadAssetAtPath)
         return filePaths;
     }
 
