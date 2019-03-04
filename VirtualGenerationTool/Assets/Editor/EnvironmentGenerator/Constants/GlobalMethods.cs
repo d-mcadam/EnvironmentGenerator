@@ -37,6 +37,11 @@ public class GlobalMethods {
         tagManager.ApplyModifiedProperties();
 
     }
+
+    public static void GenerateObjectOnTerrain(Terrain terrain, Vector3 start_point, Vector3 dimensions)
+    {
+
+    }
     
     public static void GenerateObjectsOnTerrain(Terrain terrain, int quantity, Vector3 start_point, Vector3 dimensions)
     {
@@ -63,8 +68,8 @@ public class GlobalMethods {
 
                 if (++_loopFailCount >= _maxLoopFail)
                 {
-                    EditorUtility.DisplayDialog("Loop error",
-                        "Unable to generate as failed to identify suitable vector " + _maxLoopFail + " times", "OK");
+                    EditorUtility.DisplayDialog("CONTINOUS LOOP ERROR",
+                        "Failed to identify suitable vector " + _maxLoopFail + " times on object \"" + terrain.name + "\"", "OK");
                     return;
                 }
             }
@@ -162,7 +167,7 @@ public class GlobalMethods {
     {
         //get a list of all the asset file paths
         List<string> filePaths = new List<string>();
-        foreach (string s in Directory.GetFiles("Assets/Prefabs/"))
+        foreach (string s in Directory.GetFiles("Assets/Editor/EnvironmentGenerator/Prefabs/"))
         {
             filePaths.Add(s);
         }
