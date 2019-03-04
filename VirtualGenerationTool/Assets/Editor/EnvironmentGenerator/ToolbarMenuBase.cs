@@ -34,4 +34,12 @@ public class ToolbarMenuBase : ScriptableWizard {
         DisplayWizard<WindowGenerateObjectByTerrainObject>
             (StringConstants.GenerateObject_OnTerrain_WindowTitle, StringConstants.Create);
     }
+
+    [MenuItem(StringConstants.CustomGeneratorTool_MenuTitle + "/" +
+        StringConstants.GenerateEnvironment_ButtonText, false, 1)]
+    static void GenerateEnvironmentOnTerrainWizard()
+    {
+        DisplayWizard<WindowGenerateWorldByTerrainObject>
+            (StringConstants.GenerateEnvironment_WindowTitle, StringConstants.Create);
+    }
 }

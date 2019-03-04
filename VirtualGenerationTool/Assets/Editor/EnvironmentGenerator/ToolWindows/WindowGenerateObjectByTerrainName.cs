@@ -22,9 +22,9 @@ public class WindowGenerateObjectByTerrainName : ScriptableWizard
         if (!isValid)
             return;
 
-        _startPosition = GlobalMethods.CheckStartingPoint(_startPosition, GameObject.Find(_name).GetComponent<Terrain>());
+        _startPosition = GlobalMethods.EvaluateStartingPointAgainstTerrain(_startPosition, GameObject.Find(_name).GetComponent<Terrain>());
 
-        _dimensions = GlobalMethods.CheckDimensionsAgainstTerrain(_startPosition, _dimensions, GameObject.Find(_name).GetComponent<Terrain>());
+        _dimensions = GlobalMethods.EvaluateDimensionsAgainstTerrain(_startPosition, _dimensions, GameObject.Find(_name).GetComponent<Terrain>());
 
     }
 
