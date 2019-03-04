@@ -20,7 +20,21 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 
     private void GenerationAlgorithm()
     {
-        Object[] assetPaths = GlobalMethods.GetPrefabs();
+
+        //get all the prefabs
+        Object[] prefabs = GlobalMethods.GetPrefabs();
+
+        //random object at first
+        GameObject prefab = (GameObject)PrefabUtility.InstantiatePrefab(prefabs[Random.Range(0, prefabs.Length - 1)]);
+        VectorBoolReturn startVector = GlobalMethods.GenerateStartingVector(new Vector3(), _terrainTarget.terrainData.size, _terrainTarget);
+
+        //wont need to check this yet as vector is randomised based on terrain vectors anyway
+        //if (!startVector.OperationSuccess)
+        //{
+
+        //}
+
+        prefab.transform.position = startVector.Vector;
 
     }
 }

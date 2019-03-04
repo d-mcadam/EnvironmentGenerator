@@ -198,7 +198,7 @@ public class GlobalMethods {
         return prefabs;
     }
 
-    private static VectorBoolReturn GenerateStartingVector(Vector3 start_point, Vector3 dimensions, Terrain terrain)
+    public static VectorBoolReturn GenerateStartingVector(Vector3 start_point, Vector3 dimensions, Terrain terrain)
     {
 
         //generate a random X and Z coordinate between specified boundaries
