@@ -71,15 +71,8 @@ public class GlobalMethods {
                 return;
             }
 
-            //get all prefab asset paths
-            List<string> assetFilePaths = GetPrefabFilePaths();
-
-            //get all assets as Object's
-            Object[] prefabs = new Object[assetFilePaths.Count];
-            for (int j = 0; j < prefabs.Length; j++)
-            {
-                prefabs[j] = AssetDatabase.LoadAssetAtPath(assetFilePaths[j], typeof(GameObject));
-            }
+            //get all prefans
+            Object[] prefabs = GetPrefabs();
 
             //generate the object, start vector modified to adjust for terrain vector
             GenerateObjectOnTerrain(prefabs[0], startVector.Vector + terrain.transform.position);
@@ -166,9 +159,9 @@ public class GlobalMethods {
 
     }
 
-    public static List<string> GetPrefabFilePaths()
+    public static Object[] GetPrefabs()
     {
-        //get a list of all the asset file paths
+        //get a list of all the asset file paths (using lists for easy add / remove methods)
         List<string> filePaths = new List<string>();
         foreach (string s in Directory.GetFiles(StringConstants.PrefabFilePath))
         {
@@ -193,9 +186,16 @@ public class GlobalMethods {
         {
             filePaths.Remove(s);
         }
+
+        //get all assets as Object's
+        Object[] prefabs = new Object[filePaths.Count];
+        for (int j = 0; j < prefabs.Length; j++)
+        {
+            prefabs[j] = AssetDatabase.LoadAssetAtPath(filePaths[j], typeof(GameObject));
+        }
         
-        //return ONLY prefab file paths (can be loaded with AssetDatabase.LoadAssetAtPath)
-        return filePaths;
+        //return assets
+        return prefabs;
     }
 
     private static VectorBoolReturn GenerateStartingVector(Vector3 start_point, Vector3 dimensions, Terrain terrain)

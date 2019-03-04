@@ -20,6 +20,7 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 
     private void GenerationAlgorithm()
     {
+        Object[] assetPaths = GlobalMethods.GetPrefabs();
 
     }
 }
