@@ -7,8 +7,7 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 {
 
     public Terrain _terrainTarget;
-
-
+    
     void OnWizardUpdate()
     {
         isValid = _terrainTarget;

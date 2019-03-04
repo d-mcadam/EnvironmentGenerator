@@ -10,6 +10,7 @@ public class GlobalMethods {
     //10 million times, gives acceptable 'lock-out' time
     private const int _maxLoopFail = 10000000;
     
+    //should never need modifying
     public static void CreateTagIfNotPresent(string s)
     {
 
@@ -39,9 +40,13 @@ public class GlobalMethods {
 
     }
 
-    public static void GenerateObjectOnTerrain(Terrain terrain, Vector3 start_point, Vector3 dimensions)
+    public static void GenerateObjectOnTerrain(Object obj, Vector3 vector)
     {
+        //instantiate the prefab as a gameobject
+        GameObject prefab = (GameObject)PrefabUtility.InstantiatePrefab(obj);
 
+        //set its world position
+        prefab.transform.position = vector;
     }
     
     public static void GenerateObjectsOnTerrain(Terrain terrain, int quantity, Vector3 start_point, Vector3 dimensions)
@@ -76,11 +81,9 @@ public class GlobalMethods {
                 prefabs[j] = AssetDatabase.LoadAssetAtPath(assetFilePaths[j], typeof(GameObject));
             }
 
-            //instantiate the prefab as a gameobject
-            GameObject prefab = (GameObject)PrefabUtility.InstantiatePrefab(prefabs[0]);
-
-            //set its generated world position, modified to adjust for the terrains position
-            prefab.transform.position = startVector.Vector + terrain.transform.position;
+            //generate the object, start vector modified to adjust for terrain vector
+            GenerateObjectOnTerrain(prefabs[0], startVector.Vector + terrain.transform.position);
+            
         }
 
     }
@@ -107,25 +110,26 @@ public class GlobalMethods {
 
     }
 
+    //will change the start point if it is not within terrain boundaries
     public static Vector3 EvaluateStartingPointAgainstTerrain(Vector3 start_point, Terrain terrain)
     {
 
         Vector3 terrainSize = terrain.terrainData.size;
 
         if (start_point.x >= terrainSize.x)
-            start_point.x = terrainSize.x;
+            start_point.x = terrainSize.x - 1;
 
         if (start_point.x < 0)
             start_point.x = 0;
 
         if (start_point.y >= terrainSize.y)
-            start_point.y = terrainSize.y;
+            start_point.y = terrainSize.y - 1;
 
         if (start_point.y < 0)
             start_point.y = 0;
 
         if (start_point.z >= terrainSize.z)
-            start_point.z = terrainSize.z;
+            start_point.z = terrainSize.z - 1;
 
         if (start_point.z < 0)
             start_point.z = 0;
@@ -134,6 +138,7 @@ public class GlobalMethods {
 
     }
 
+    //will change dimensions if it is not within terrain boundaries
     public static Vector3 EvaluateDimensionsAgainstTerrain(Vector3 start_point, Vector3 dimensions, Terrain terrain)
     {
 
@@ -160,8 +165,8 @@ public class GlobalMethods {
         return dimensions;
 
     }
-    
-    private static List<string> GetPrefabFilePaths()
+
+    public static List<string> GetPrefabFilePaths()
     {
         //get a list of all the asset file paths
         List<string> filePaths = new List<string>();
