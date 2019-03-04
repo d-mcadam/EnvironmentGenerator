@@ -19,7 +19,7 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4302007343044106}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: GreenSphere
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -37,7 +37,7 @@ GameObject:
   - component: {fileID: 33065046610847564}
   - component: {fileID: 23634713071910550}
   - component: {fileID: 135086235752383804}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: GreenSphere
   m_TagString: Untagged
   m_Icon: {fileID: 0}

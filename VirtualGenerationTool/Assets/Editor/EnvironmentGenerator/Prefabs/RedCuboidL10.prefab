@@ -22,7 +22,7 @@ GameObject:
   - component: {fileID: 33397347137861804}
   - component: {fileID: 23027786139581748}
   - component: {fileID: 65753346942819804}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: RedCuboidL10
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -37,9 +37,9 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4874132072403902}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: RedCuboidL10
-  m_TagString: Untagged
+  m_TagString: Cuboid
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

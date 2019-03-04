@@ -19,9 +19,9 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4034412451148892}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: YellowCube
-  m_TagString: Untagged
+  m_TagString: Cube
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -37,7 +37,7 @@ GameObject:
   - component: {fileID: 33777132333136178}
   - component: {fileID: 23382978676221046}
   - component: {fileID: 65347996558616364}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: YellowCube
   m_TagString: Untagged
   m_Icon: {fileID: 0}

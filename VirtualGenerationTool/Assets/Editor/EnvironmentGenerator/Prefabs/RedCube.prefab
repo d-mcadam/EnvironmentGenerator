@@ -19,9 +19,9 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4711024798389128}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: RedCube
-  m_TagString: Untagged
+  m_TagString: Cube
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -37,7 +37,7 @@ GameObject:
   - component: {fileID: 33666262463044740}
   - component: {fileID: 23372983813469676}
   - component: {fileID: 65485910446813484}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: RedCube
   m_TagString: Untagged
   m_Icon: {fileID: 0}

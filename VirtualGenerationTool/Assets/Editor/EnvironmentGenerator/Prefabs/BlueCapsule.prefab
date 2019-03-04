@@ -22,7 +22,7 @@ GameObject:
   - component: {fileID: 33023408232308668}
   - component: {fileID: 23819652824836316}
   - component: {fileID: 136373088328639640}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: BlueCapsule
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -37,9 +37,9 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4572802246472750}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: BlueCapsule
-  m_TagString: Untagged
+  m_TagString: Capsule
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

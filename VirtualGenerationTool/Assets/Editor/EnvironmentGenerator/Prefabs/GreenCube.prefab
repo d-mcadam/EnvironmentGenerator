@@ -22,7 +22,7 @@ GameObject:
   - component: {fileID: 33971093369737644}
   - component: {fileID: 23836223606872412}
   - component: {fileID: 65989662637753752}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: GreenCube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -37,9 +37,9 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4089050410614488}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: GreenCube
-  m_TagString: Untagged
+  m_TagString: Cube
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

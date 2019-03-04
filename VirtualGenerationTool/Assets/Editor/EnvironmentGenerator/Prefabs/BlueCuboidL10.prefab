@@ -19,9 +19,9 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4095408116852006}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: BlueCuboidL10
-  m_TagString: Untagged
+  m_TagString: Cuboid
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -37,7 +37,7 @@ GameObject:
   - component: {fileID: 33366924467097892}
   - component: {fileID: 23979688523274494}
   - component: {fileID: 65951975651830036}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: BlueCuboidL10
   m_TagString: Untagged
   m_Icon: {fileID: 0}

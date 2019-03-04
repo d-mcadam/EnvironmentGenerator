@@ -22,9 +22,9 @@ GameObject:
   - component: {fileID: 33301610729864002}
   - component: {fileID: 23827451512941834}
   - component: {fileID: 136977332204967450}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: GreenCylinder
-  m_TagString: Untagged
+  m_TagString: Cylinder
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

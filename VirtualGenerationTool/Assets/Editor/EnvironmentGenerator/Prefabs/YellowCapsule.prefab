@@ -19,9 +19,9 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4894299425565518}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: YellowCapsule
-  m_TagString: Untagged
+  m_TagString: Capsule
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -37,7 +37,7 @@ GameObject:
   - component: {fileID: 33692567596407296}
   - component: {fileID: 23863984182859996}
   - component: {fileID: 136815475580278582}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: YellowCapsule
   m_TagString: Untagged
   m_Icon: {fileID: 0}

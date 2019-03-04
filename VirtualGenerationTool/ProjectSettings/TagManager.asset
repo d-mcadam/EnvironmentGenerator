@@ -6,6 +6,11 @@ TagManager:
   tags:
   - Enter Tag Here
   - Base Terrain
+  - Capsule
+  - Cube
+  - Cuboid
+  - Sphere
+  - Cylinder
   layers:
   - Default
   - TransparentFX
@@ -16,7 +21,7 @@ TagManager:
   - 
   - 
   - PostProcessing
-  - 
+  - Environment
   - 
   - 
   - 

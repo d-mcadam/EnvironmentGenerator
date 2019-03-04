@@ -19,9 +19,9 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4146480885058296}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: BlueSphere
-  m_TagString: Untagged
+  m_TagString: Sphere
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -37,7 +37,7 @@ GameObject:
   - component: {fileID: 33073790941908032}
   - component: {fileID: 23932666878812696}
   - component: {fileID: 135406313340163336}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: BlueSphere
   m_TagString: Untagged
   m_Icon: {fileID: 0}
