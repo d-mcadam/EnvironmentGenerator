@@ -25,7 +25,7 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
     private void GenerationAlgorithm()
     {
 
-        //get all the prefabs
+        //get an array of all the prefabs
         Object[] prefabs = GlobalMethods.GetPrefabs();
 
         //this possibly a 'type' parameter? along with 'village'?
@@ -33,34 +33,46 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 
         if (creatingCityStreets)
         {
-            
-            //random object at first
-            GameObject prefab = (GameObject)PrefabUtility.InstantiatePrefab(prefabs[Random.Range(0, prefabs.Length - 1)]);
+            //choose object
+            Object obj = prefabs[Random.Range(0, prefabs.Length - 1)];
             VectorBoolReturn startVector = GlobalMethods.GenerateStartingVector(new Vector3(), _terrainTarget.terrainData.size, _terrainTarget);
 
-            //wont need to check this yet as vector is randomised based on terrain vectors anyway
-            //if (!startVector.OperationSuccess)
-            //{
-
-            //}
-
-            int yRotation = Random.Range(0, 359);
-            prefab.transform.position = startVector.Vector;
-            prefab.transform.rotation = Quaternion.Euler(new Vector3(0, yRotation, 0));
-
-            GameObject previousPrefab = prefab;
-            GameObject newPrefab = (GameObject)prefabs[Random.Range(0, prefabs.Length - 1)];
-
-            while (!ObjectWithinRestrictions(previousPrefab, newPrefab))
+            if (!startVector.OperationSuccess)
             {
-                newPrefab = (GameObject)prefabs[Random.Range(0, prefabs.Length - 1)];
+                EditorUtility.DisplayDialog(StringConstants.Error, "FAILED", "OK");
+                return;
+            }
 
-                //exit method if loop limit reached
-                if (++_loopFailCount >= _maxLoopFail)
+            //instantiate object
+            GameObject prefab = (GameObject)PrefabUtility.InstantiatePrefab(obj);
+            prefab.transform.position = startVector.Vector;
+            prefab.transform.rotation = Quaternion.Euler(new Vector3(0, Random.Range(0, 360), 0));
+
+            //save reference to first generated object
+            GameObject previousPrefab = prefab;
+
+            for (int i = 0; i < 3; i++)
+            {
+                //choose new object
+                Object newObj = prefabs[Random.Range(0, prefabs.Length - 1)];
+
+                //check if it satisfies restrictions
+                while (!ObjectWithinRestrictions(previousPrefab, newObj))
                 {
-                    EditorUtility.DisplayDialog(StringConstants.Error, StringConstants.Error_ContinousLoopError, "OK");
-                    return;
+                    //if it does NOT satisfy restrictions, choose new object again
+                    newObj = prefabs[Random.Range(0, prefabs.Length - 1)];
+
+                    //exit method if loop limit reached, an error has occurred
+                    if (++_loopFailCount >= _maxLoopFail)
+                    {
+                        EditorUtility.DisplayDialog(StringConstants.Error, StringConstants.Error_ContinousLoopError, "OK");
+                        return;
+                    }
                 }
+
+                prefab = (GameObject)PrefabUtility.InstantiatePrefab(newObj);
+                prefab.transform.position = previousPrefab.transform.position;
+                prefab.transform.rotation = previousPrefab.transform.rotation;
             }
             
         }
@@ -71,13 +83,33 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 
     }
 
-    private bool ObjectWithinRestrictions(GameObject previousObject, GameObject newObject)
+    private bool ObjectWithinRestrictions(GameObject previousObject, Object obj)
     {
+        GameObject newObject = (GameObject)obj;
 
         bool colourCondition = false;
 
-        Color previousObjectColour = previousObject.GetComponent<MeshRenderer>().material.color;
-        Color newObjectColour = newObject.GetComponent<MeshRenderer>().material.color;
+        Color previousObjectColour = Color.white;
+        Color newObjectColour = Color.white;
+
+        try
+        {
+            previousObjectColour = previousObject.GetComponent<MeshRenderer>().sharedMaterial.color;
+        }
+        catch (MissingComponentException e)
+        {
+            previousObjectColour = previousObject.transform.GetChild(0).GetComponent<MeshRenderer>().sharedMaterial.color;
+        }
+
+        try
+        {
+            newObjectColour = newObject.GetComponent<MeshRenderer>().sharedMaterial.color;
+        }
+        catch (MissingComponentException e)
+        {
+            newObjectColour = newObject.transform.GetChild(0).GetComponent<MeshRenderer>().sharedMaterial.color;
+        }
+
 
         colourCondition = 
             (previousObjectColour == Color.red && newObjectColour != Color.blue) ||
@@ -86,6 +118,11 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
             (previousObjectColour == Color.yellow && newObjectColour != Color.green);
         
         return colourCondition;
+    }
+    
+    private void DisplayError(string msg)
+    {
+        EditorUtility.DisplayDialog(StringConstants.Error, msg, "OK");
     }
 
 }

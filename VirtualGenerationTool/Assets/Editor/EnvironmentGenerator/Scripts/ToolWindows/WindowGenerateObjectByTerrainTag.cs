@@ -67,6 +67,7 @@ public class WindowGenerateObjectByTerrainTag : ScriptableWizard
             }
             else
             {
+                //only generating on first identified terrain, usually first in scene hierarchy
                 GlobalMethods.GenerateObjectsOnTerrain(terrains[0], _objectQuantity, _startPosition, _dimensions);
             }
         }

@@ -40,13 +40,15 @@ public class GlobalMethods {
 
     }
 
-    public static void GenerateObjectOnTerrain(Object obj, Vector3 vector)
+    private static void GenerateObject(Object obj, Vector3 vector)
     {
+
         //instantiate the prefab as a gameobject
         GameObject prefab = (GameObject)PrefabUtility.InstantiatePrefab(obj);
 
         //set its world position
         prefab.transform.position = vector;
+
     }
     
     public static void GenerateObjectsOnTerrain(Terrain terrain, int quantity, Vector3 start_point, Vector3 dimensions)
@@ -67,7 +69,7 @@ public class GlobalMethods {
             if (!startVector.OperationSuccess)
             {
                 //display a message box detailing to the user what happened
-                EditorUtility.DisplayDialog(StringConstants.Error, startVector.Message, "OK");
+                EditorUtility.DisplayDialog(StringConstants.Error, startVector.Message + "\nFailed to find start vector on loop " + (i+1), "OK");
                 return;
             }
 
@@ -75,10 +77,9 @@ public class GlobalMethods {
             Object[] prefabs = GetPrefabs();
 
             //generate the object, start vector modified to adjust for terrain vector
-            GenerateObjectOnTerrain(prefabs[0], startVector.Vector + terrain.transform.position);
+            GenerateObject(prefabs[0], startVector.Vector);
             
         }
-
     }
 
     //this method is currently only used to generate objects identified by tag
@@ -200,7 +201,6 @@ public class GlobalMethods {
 
     public static VectorBoolReturn GenerateStartingVector(Vector3 start_point, Vector3 dimensions, Terrain terrain)
     {
-
         //generate a random X and Z coordinate between specified boundaries
         float x = Random.Range(start_point.x, start_point.x + dimensions.x);
         float z = Random.Range(start_point.z, start_point.z + dimensions.z);
@@ -226,8 +226,7 @@ public class GlobalMethods {
         }
 
         //return the generated starting vector
-        return new VectorBoolReturn(new Vector3(x, y, z));
-
+        return new VectorBoolReturn(new Vector3(x, y, z) + terrain.transform.position);
     }
 
 }
