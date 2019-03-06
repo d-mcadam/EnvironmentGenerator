@@ -10,7 +10,7 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 
     private int _loopFailCount = 0;
     //10 million times, gives acceptable 'lock-out' time
-    private const int _maxLoopFail = 10000000;
+    private const int _maxLoopFail = 1000;
 
     void OnWizardUpdate()
     {
@@ -28,18 +28,18 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
         //get an array of all the prefabs
         Object[] prefabs = GlobalMethods.GetPrefabs();
 
-        //this possibly a 'type' parameter? along with 'village'?
+        //this is possibly a 'type' parameter? along with 'village'?
         bool creatingCityStreets = true;
 
         if (creatingCityStreets)
         {
-            //choose object
-            Object obj = prefabs[Random.Range(0, prefabs.Length - 1)];
+            //choose object (this is effectively a 'seed' for the generator)
+            Object obj = prefabs[22];//[Random.Range(0, prefabs.Length - 1)];
             VectorBoolReturn startVector = GlobalMethods.GenerateStartingVector(new Vector3(), _terrainTarget.terrainData.size, _terrainTarget);
 
             if (!startVector.OperationSuccess)
             {
-                EditorUtility.DisplayDialog(StringConstants.Error, "FAILED", "OK");
+                DisplayError("Failed to seed environment with initial start vector");
                 return;
             }
 
@@ -53,26 +53,31 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 
             for (int i = 0; i < 3; i++)
             {
+                _loopFailCount = 0;
+
                 //choose new object
                 Object newObj = prefabs[Random.Range(0, prefabs.Length - 1)];
 
                 //check if it satisfies restrictions
-                while (!ObjectWithinRestrictions(previousPrefab, newObj))
+                while (!ObjectWithinParameters(previousPrefab, newObj))
                 {
                     //if it does NOT satisfy restrictions, choose new object again
                     newObj = prefabs[Random.Range(0, prefabs.Length - 1)];
-
+                    
                     //exit method if loop limit reached, an error has occurred
                     if (++_loopFailCount >= _maxLoopFail)
                     {
-                        EditorUtility.DisplayDialog(StringConstants.Error, StringConstants.Error_ContinousLoopError, "OK");
+                        DisplayError(StringConstants.Error_ContinousLoopError);
                         return;
                     }
                 }
 
                 prefab = (GameObject)PrefabUtility.InstantiatePrefab(newObj);
                 prefab.transform.position = previousPrefab.transform.position;
+                prefab.transform.Translate(NewRelativeObjectPosition(prefab, previousPrefab));//Space.world will move relative to world axis
                 prefab.transform.rotation = previousPrefab.transform.rotation;
+
+                previousPrefab = prefab;
             }
             
         }
@@ -83,12 +88,17 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 
     }
 
-    private bool ObjectWithinRestrictions(GameObject previousObject, Object obj)
+    private bool ObjectWithinParameters(GameObject previousObject, Object obj)
     {
         GameObject newObject = (GameObject)obj;
 
-        bool colourCondition = false;
+        bool colourCondition = WithinColourParameters(previousObject, newObject);
 
+        return colourCondition;
+    }
+
+    private bool WithinColourParameters(GameObject previousObject, GameObject newObject)
+    {
         Color previousObjectColour = Color.white;
         Color newObjectColour = Color.white;
 
@@ -109,15 +119,38 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
         {
             newObjectColour = newObject.transform.GetChild(0).GetComponent<MeshRenderer>().sharedMaterial.color;
         }
-
-
-        colourCondition = 
+        
+        return  //the colour for yellow is slightly different to the custom defined material colour for yellow
             (previousObjectColour == Color.red && newObjectColour != Color.blue) ||
             (previousObjectColour == Color.blue && newObjectColour != Color.red) ||
-            (previousObjectColour == Color.green && newObjectColour != Color.yellow) ||
-            (previousObjectColour == Color.yellow && newObjectColour != Color.green);
+            (previousObjectColour == Color.green && newObjectColour != new Color(1.0f, 1.0f, 0.0f)) ||
+            (previousObjectColour == new Color(1.0f, 1.0f, 0.0f) && newObjectColour != Color.green);
+    }
+
+    private Vector3 NewRelativeObjectPosition(GameObject newObj, GameObject oldObj)
+    {
+        float newObjectLength = 0;
+        float oldObjectLength = 0;
+
+        try
+        {
+            newObjectLength = newObj.transform.GetChild(0).transform.lossyScale.x / 2;
+        }
+        catch(UnityException e)
+        {
+            newObjectLength = newObj.transform.lossyScale.x / 2;
+        }
+
+        try
+        {
+            oldObjectLength = oldObj.transform.GetChild(0).transform.lossyScale.x / 2;
+        }
+        catch(UnityException e)
+        {
+            oldObjectLength = oldObj.transform.lossyScale.x / 2;
+        }
         
-        return colourCondition;
+        return new Vector3(newObjectLength + oldObjectLength, 0, 0);
     }
     
     private void DisplayError(string msg)
