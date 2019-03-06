@@ -43,7 +43,7 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 
                 if (!startVector.OperationSuccess)
                 {
-                    DisplayError("Failed to seed environment with initial start vector");
+                    DisplayError("Failed to seed environment with initial start vector\n\nLikely an issue with input vector dimensions compared with the Terrain's vertice coordinates");
                     return;
                 }
 
@@ -96,8 +96,6 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
             }//end of _maxObjectQuantity
 
             outerloop:;//used to break from nested loop if maximum quantity reached
-            Debug.Log("Exited loop");
-
 
         }
         else
