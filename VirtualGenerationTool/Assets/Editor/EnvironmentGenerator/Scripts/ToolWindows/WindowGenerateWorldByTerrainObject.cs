@@ -12,6 +12,9 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
     //10 million times, gives acceptable 'lock-out' time
     private const int _maxLoopFail = 1000;
 
+    private const int _maxObjectQuantity = 105;
+    private const int _maxSeriesQuantity = 20;
+
     void OnWizardUpdate()
     {
         isValid = _terrainTarget;
@@ -24,7 +27,6 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 
     private void GenerationAlgorithm()
     {
-
         //get an array of all the prefabs
         Object[] prefabs = GlobalMethods.GetPrefabs();
 
@@ -33,53 +35,70 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 
         if (creatingCityStreets)
         {
-            //choose object (this is effectively a 'seed' for the generator)
-            Object obj = prefabs[22];//[Random.Range(0, prefabs.Length - 1)];
-            VectorBoolReturn startVector = GlobalMethods.GenerateStartingVector(new Vector3(), _terrainTarget.terrainData.size, _terrainTarget);
-
-            if (!startVector.OperationSuccess)
+            for (int total = 0; total < _maxObjectQuantity; total+=0)
             {
-                DisplayError("Failed to seed environment with initial start vector");
-                return;
-            }
+                //choose object (this is effectively a 'seed' for the generator)
+                Object obj = prefabs[Random.Range(0, prefabs.Length - 1)];
+                VectorBoolReturn startVector = GlobalMethods.GenerateStartingVector(new Vector3(), _terrainTarget.terrainData.size, _terrainTarget);
 
-            //instantiate object
-            GameObject prefab = (GameObject)PrefabUtility.InstantiatePrefab(obj);
-            prefab.transform.position = startVector.Vector;
-            prefab.transform.rotation = Quaternion.Euler(new Vector3(0, Random.Range(0, 360), 0));
-
-            //save reference to first generated object
-            GameObject previousPrefab = prefab;
-
-            for (int i = 0; i < 3; i++)
-            {
-                _loopFailCount = 0;
-
-                //choose new object
-                Object newObj = prefabs[Random.Range(0, prefabs.Length - 1)];
-
-                //check if it satisfies restrictions
-                while (!ObjectWithinParameters(previousPrefab, newObj))
+                if (!startVector.OperationSuccess)
                 {
-                    //if it does NOT satisfy restrictions, choose new object again
-                    newObj = prefabs[Random.Range(0, prefabs.Length - 1)];
-                    
-                    //exit method if loop limit reached, an error has occurred
-                    if (++_loopFailCount >= _maxLoopFail)
-                    {
-                        DisplayError(StringConstants.Error_ContinousLoopError);
-                        return;
-                    }
+                    DisplayError("Failed to seed environment with initial start vector");
+                    return;
                 }
 
-                prefab = (GameObject)PrefabUtility.InstantiatePrefab(newObj);
-                prefab.transform.position = previousPrefab.transform.position;
-                prefab.transform.Translate(NewRelativeObjectPosition(prefab, previousPrefab), previousPrefab.transform);
-                prefab.transform.rotation = previousPrefab.transform.rotation;
+                //instantiate object
+                GameObject prefab = (GameObject)PrefabUtility.InstantiatePrefab(obj);
+                prefab.transform.position = startVector.Vector;
+                prefab.transform.rotation = Quaternion.Euler(new Vector3(0, Random.Range(0, 360), 0));
 
-                previousPrefab = prefab;
-            }
-            
+                //save reference to first generated object
+                GameObject previousPrefab = prefab;
+
+                //starts at 'one' as the 'seed' is the initial object
+                for (int i = 1; i < _maxSeriesQuantity; i++)
+                {
+                    if (total + i >= _maxObjectQuantity)
+                        goto outerloop;
+
+                    _loopFailCount = 0;
+
+                    //choose new object
+                    Object newObj = prefabs[Random.Range(0, prefabs.Length - 1)];
+
+                    //check if it satisfies restrictions
+                    while (!ObjectWithinParameters(previousPrefab, newObj))
+                    {
+                        //if it does NOT satisfy restrictions, choose new object again
+                        newObj = prefabs[Random.Range(0, prefabs.Length - 1)];
+
+                        //exit method if loop limit reached, an error has occurred
+                        if (++_loopFailCount >= _maxLoopFail)
+                        {
+                            DisplayError(StringConstants.Error_ContinousLoopError);
+                            return;
+                        }
+                    }
+
+                    //instantiate the new object
+                    prefab = (GameObject)PrefabUtility.InstantiatePrefab(newObj);
+                    prefab.transform.position = previousPrefab.transform.position;
+                    prefab.transform.Translate(NewRelativeObjectPosition(prefab, previousPrefab), previousPrefab.transform);
+                    prefab.transform.rotation = previousPrefab.transform.rotation;
+
+                    //save a copy
+                    previousPrefab = prefab;
+
+                }//end of _maxSeriesQuantity
+
+                total += _maxSeriesQuantity;
+
+            }//end of _maxObjectQuantity
+
+            outerloop:;//used to break from nested loop if maximum quantity reached
+            Debug.Log("Exited loop");
+
+
         }
         else
         {
