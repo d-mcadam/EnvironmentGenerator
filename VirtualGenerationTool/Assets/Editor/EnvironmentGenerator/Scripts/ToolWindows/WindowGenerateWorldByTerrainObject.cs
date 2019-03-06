@@ -74,7 +74,7 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 
                 prefab = (GameObject)PrefabUtility.InstantiatePrefab(newObj);
                 prefab.transform.position = previousPrefab.transform.position;
-                prefab.transform.Translate(NewRelativeObjectPosition(prefab, previousPrefab));//Space.world will move relative to world axis
+                prefab.transform.Translate(NewRelativeObjectPosition(prefab, previousPrefab), previousPrefab.transform);
                 prefab.transform.rotation = previousPrefab.transform.rotation;
 
                 previousPrefab = prefab;
