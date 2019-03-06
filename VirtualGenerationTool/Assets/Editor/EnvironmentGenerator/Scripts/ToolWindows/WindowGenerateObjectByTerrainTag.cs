@@ -14,6 +14,20 @@ public class WindowGenerateObjectByTerrainTag : ScriptableWizard
 
     public Vector3 _dimensions = new Vector3(100, 100, 100);
 
+    void OnWizardUpdate()
+    {
+
+        if (_dimensions.x < 1)
+            _dimensions.x = 1;
+
+        if (_dimensions.y < 1)
+            _dimensions.y = 1;
+
+        if (_dimensions.z < 1)
+            _dimensions.z = 1;
+
+    }
+
     void OnWizardCreate()
     {
 
@@ -53,12 +67,13 @@ public class WindowGenerateObjectByTerrainTag : ScriptableWizard
             }
             else
             {
+                //only generating on first identified terrain, usually first in scene hierarchy
                 GlobalMethods.GenerateObjectsOnTerrain(terrains[0], _objectQuantity, _startPosition, _dimensions);
             }
         }
         else
         {
-            EditorUtility.DisplayDialog("No terrain found by Tag", "Unable to find a terrain with tag \"" + _tag + "\"", "OK");
+            EditorUtility.DisplayDialog("No terrain found", "Unable to find a terrain with tag \"" + _tag + "\"", "OK");
         }
 
     }
