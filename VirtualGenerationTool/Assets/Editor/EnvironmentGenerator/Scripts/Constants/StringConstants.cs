@@ -11,8 +11,9 @@ public class StringConstants {
     //constant strings
     public const string Create = "Create";
     public const string Error = "Error";
-    public const string PrefabFilePath = "Assets/Editor/EnvironmentGenerator/Prefabs/";
-    
+    public const string BasicPrefabFilePath = "Assets/Editor/EnvironmentGenerator/Prefabs/BasicPrefabs";
+    public const string ModelPrefabFilePath = "Assets/Editor/EnvironmentGenerator/Prefabs/ModelPrefabs";
+
     //base menu title
     public const string CustomGeneratorTool_MenuTitle = "Custom Generator Tool";
 

@@ -7,6 +7,8 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 {
 
     public Terrain _terrainTarget;
+    
+    public GenerateWorldTheme _generatorTheme = GenerateWorldTheme.Cities;
 
     public int _maximumNumberOfObjects = 105;
     public int _maximumNumberOfObjectInSeries = 20;
@@ -28,7 +30,7 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
     private void GenerationAlgorithm()
     {
         //get an array of all the prefabs
-        Object[] prefabs = GlobalMethods.GetPrefabs();
+        Object[] prefabs = GlobalMethods.GetPrefabs(StringConstants.BasicPrefabFilePath);
 
         //this is possibly a 'type' parameter? along with 'village'?
         bool creatingCityStreets = true;

@@ -74,7 +74,7 @@ public class GlobalMethods {
             }
 
             //get all prefans
-            Object[] prefabs = GetPrefabs();
+            Object[] prefabs = GetPrefabs(StringConstants.BasicPrefabFilePath);
 
             //generate the object, start vector modified to adjust for terrain vector
             GenerateObject(prefabs[0], startVector.Vector);
@@ -160,11 +160,11 @@ public class GlobalMethods {
 
     }
 
-    public static Object[] GetPrefabs()
+    public static Object[] GetPrefabs(string path)
     {
         //get a list of all the asset file paths (using lists for easy add / remove methods)
         List<string> filePaths = new List<string>();
-        foreach (string s in Directory.GetFiles(StringConstants.PrefabFilePath))
+        foreach (string s in Directory.GetFiles(path))
         {
             filePaths.Add(s);
         }
