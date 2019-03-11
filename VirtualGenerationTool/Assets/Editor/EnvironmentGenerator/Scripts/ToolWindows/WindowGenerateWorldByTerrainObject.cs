@@ -8,12 +8,12 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 
     public Terrain _terrainTarget;
 
+    public int _maximumNumberOfObjects = 105;
+    public int _maximumNumberOfObjectInSeries = 20;
+
     private int _loopFailCount = 0;
     //10 million times, gives acceptable 'lock-out' time
     private const int _maxLoopFail = 1000;
-
-    private const int _maxObjectQuantity = 105;
-    private const int _maxSeriesQuantity = 20;
 
     void OnWizardUpdate()
     {
@@ -24,7 +24,7 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
     {
         GenerationAlgorithm();
     }
-
+    
     private void GenerationAlgorithm()
     {
         //get an array of all the prefabs
@@ -35,7 +35,7 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 
         if (creatingCityStreets)
         {
-            for (int total = 0; total < _maxObjectQuantity; total+=0)
+            for (int currentTotalObjects = 0; currentTotalObjects < _maximumNumberOfObjects; currentTotalObjects+=0)
             {
                 //choose object (this is effectively a 'seed' for the generator)
                 Object obj = prefabs[Random.Range(0, prefabs.Length - 1)];
@@ -47,30 +47,35 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
                     return;
                 }
 
-                //instantiate object
+                //initialise a game object variable and instantiate first object
                 GameObject prefab = (GameObject)PrefabUtility.InstantiatePrefab(obj);
                 prefab.transform.position = startVector.Vector;
                 prefab.transform.rotation = Quaternion.Euler(new Vector3(0, Random.Range(0, 360), 0));
+                if (prefab.tag == "Cylinder")
+                {
+                    prefab.transform.rotation = Quaternion.Euler(new Vector3(0f, 0f, 90f));
+                    prefab.transform.Translate(new Vector3(prefab.transform.lossyScale.x / 2, 0f, 0f));
+                }
 
                 //save reference to first generated object
                 GameObject previousPrefab = prefab;
 
                 //starts at 'one' as the 'seed' is the initial object
-                for (int i = 1; i < _maxSeriesQuantity; i++)
+                for (int currentSeriesTotal = 1; currentSeriesTotal < _maximumNumberOfObjectInSeries; currentSeriesTotal++)
                 {
-                    if (total + i >= _maxObjectQuantity)
+                    if (currentTotalObjects + currentSeriesTotal >= _maximumNumberOfObjects)
                         goto outerloop;
 
                     _loopFailCount = 0;
 
                     //choose new object
-                    Object newObj = prefabs[Random.Range(0, prefabs.Length - 1)];
+                    Object newObject = prefabs[Random.Range(0, prefabs.Length - 1)];
 
                     //check if it satisfies restrictions
-                    while (!ObjectWithinParameters(previousPrefab, newObj))
+                    while (!ObjectWithinParameters(previousPrefab, newObject))
                     {
                         //if it does NOT satisfy restrictions, choose new object again
-                        newObj = prefabs[Random.Range(0, prefabs.Length - 1)];
+                        newObject = prefabs[Random.Range(0, prefabs.Length - 1)];
 
                         //exit method if loop limit reached, an error has occurred
                         if (++_loopFailCount >= _maxLoopFail)
@@ -81,9 +86,12 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
                     }
 
                     //instantiate the new object
-                    prefab = (GameObject)PrefabUtility.InstantiatePrefab(newObj);
+                    prefab = (GameObject)PrefabUtility.InstantiatePrefab(newObject);
+                    //set the original position
                     prefab.transform.position = previousPrefab.transform.position;
+                    //translate the position relative to the previous objects rotation
                     prefab.transform.Translate(NewRelativeObjectPosition(prefab, previousPrefab), previousPrefab.transform);
+                    //rotate the new object to line up with others
                     prefab.transform.rotation = previousPrefab.transform.rotation;
 
                     //save a copy
@@ -91,7 +99,7 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 
                 }//end of _maxSeriesQuantity
 
-                total += _maxSeriesQuantity;
+                currentTotalObjects += _maximumNumberOfObjectInSeries;
 
             }//end of _maxObjectQuantity
 
@@ -111,7 +119,9 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 
         bool colourCondition = WithinColourParameters(previousObject, newObject);
 
-        return colourCondition;
+        bool shapeCondition = WithinShapeParameters(previousObject, newObject);
+
+        return colourCondition && shapeCondition;
     }
 
     private bool WithinColourParameters(GameObject previousObject, GameObject newObject)
@@ -142,6 +152,14 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
             (previousObjectColour == Color.blue && newObjectColour != Color.red) ||
             (previousObjectColour == Color.green && newObjectColour != new Color(1.0f, 1.0f, 0.0f)) ||
             (previousObjectColour == new Color(1.0f, 1.0f, 0.0f) && newObjectColour != Color.green);
+    }
+
+    private bool WithinShapeParameters(GameObject previousObject, GameObject newObject)
+    {
+
+
+
+        return true;
     }
 
     private Vector3 NewRelativeObjectPosition(GameObject newObj, GameObject oldObj)

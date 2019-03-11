@@ -174,7 +174,7 @@ public class GlobalMethods {
         foreach (string s in filePaths)
         {
             //remove any meta files
-            if (s.Contains(".prefab.meta"))
+            if (s.Contains(".meta"))
                 stringsToRemove.Add(s);
 
             //remove anything that isn't a prefab
