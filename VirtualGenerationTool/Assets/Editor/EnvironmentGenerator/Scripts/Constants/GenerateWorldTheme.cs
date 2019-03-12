@@ -4,6 +4,8 @@ using UnityEngine;
 
 public enum GenerateWorldTheme
 {
-	Cities,
+    ModernCities,
+    ModernCitiesWithStreets,
+    CityStreets,
     Villages
 }

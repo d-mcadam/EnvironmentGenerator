@@ -8,8 +8,6 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
 
     public Terrain _terrainTarget;
     
-    public GenerateWorldTheme _generatorTheme = GenerateWorldTheme.Cities;
-
     public int _maximumNumberOfObjects = 105;
     public int _maximumNumberOfObjectInSeries = 20;
 

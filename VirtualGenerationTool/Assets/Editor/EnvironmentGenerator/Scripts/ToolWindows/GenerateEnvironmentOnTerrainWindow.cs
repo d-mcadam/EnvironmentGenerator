@@ -8,7 +8,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
     private Terrain _terrainTarget;
 
-    private GenerateWorldTheme _generatorTheme = GenerateWorldTheme.Cities;
+    private GenerateWorldTheme _generatorTheme = GenerateWorldTheme.ModernCities;
 
     private int _maximumNumberOfObjects = 105;
     private int _maximumNumberInSeriesOrCluster = 20;
@@ -35,9 +35,17 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
         //limited generator values
         GUILayout.Label("Maximum Generation Values", EditorStyles.boldLabel);        EditorGUI.indentLevel++;
+
         _maximumNumberOfObjects = EditorGUILayout.IntField("Maximum Total", _maximumNumberOfObjects);
+
         _maximumNumberInSeriesOrCluster = 
-            EditorGUILayout.IntField("Total in " + (_generatorTheme == GenerateWorldTheme.Cities ? "Series" : "Cluster"), _maximumNumberInSeriesOrCluster);
+            EditorGUILayout.IntField("Total in " + 
+                (_generatorTheme == GenerateWorldTheme.ModernCitiesWithStreets || 
+                _generatorTheme == GenerateWorldTheme.CityStreets ? "Series" : "Cluster"),
+                _maximumNumberInSeriesOrCluster);
+
+
+
         EditorGUI.indentLevel--;
 
         //buttons
@@ -55,12 +63,41 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         EditorGUI.EndDisabledGroup();
     }
 
+
     private void ModelPrefabGenerationAlgorithm()
     {
         Object[] models = GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath);
         Debug.Log(models.Length);
     }
     
+
+    private Vector3 NewRelativeObjectPosition(GameObject newObj, GameObject oldObj)
+    {
+        float newObjectLength = 0;
+        float oldObjectLength = 0;
+
+        try
+        {
+            newObjectLength = newObj.transform.GetChild(0).transform.lossyScale.x / 2;
+        }
+        catch (UnityException e)
+        {
+            newObjectLength = newObj.transform.lossyScale.x / 2;
+        }
+
+        try
+        {
+            oldObjectLength = oldObj.transform.GetChild(0).transform.lossyScale.x / 2;
+        }
+        catch (UnityException e)
+        {
+            oldObjectLength = oldObj.transform.lossyScale.x / 2;
+        }
+
+        return new Vector3(newObjectLength + oldObjectLength, 0, 0);
+    }
+
+
     private void BasicPrefabGenerationAlgorithm()
     {
         //get an array of all the prefabs
@@ -68,10 +105,8 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
         switch (_generatorTheme)
         {
-            case GenerateWorldTheme.Cities:
-                BasicPrefabGenerateCities(prefabs);
-                break;
-            case GenerateWorldTheme.Villages:
+            case GenerateWorldTheme.CityStreets:
+                BasicPrefabGenerateCityStreets(prefabs);
                 break;
             default:
                 DisplayError("Switch statement 'default' hit");
@@ -79,7 +114,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         }
         
     }
-    private void BasicPrefabGenerateCities(Object[] prefabs)
+    private void BasicPrefabGenerateCityStreets(Object[] prefabs)
     {
         for (int currentTotalObjects = 0; currentTotalObjects < _maximumNumberOfObjects; currentTotalObjects += 0)
         {
@@ -118,7 +153,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                 Object newObject = prefabs[Random.Range(0, prefabs.Length - 1)];
 
                 //check if it satisfies restrictions
-                while (!ObjectWithinParameters(previousPrefab, newObject))
+                while (!BasicPrefabObjectWithinParameters(previousPrefab, newObject))
                 {
                     //if it does NOT satisfy restrictions, choose new object again
                     newObject = prefabs[Random.Range(0, prefabs.Length - 1)];
@@ -152,22 +187,19 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         outerloop:;//used to break from nested loop if maximum quantity reached
 
     }
-    private void BasicPrefabGenerateVillages(Object[] prefabs){
 
-    }
 
-    private bool ObjectWithinParameters(GameObject previousObject, Object obj)
+    private bool BasicPrefabObjectWithinParameters(GameObject previousObject, Object obj)
     {
         GameObject newObject = (GameObject)obj;
 
-        bool colourCondition = WithinColourParameters(previousObject, newObject);
+        bool colourCondition = BasicPrefabWithinColourParameters(previousObject, newObject);
 
-        bool sizeCondition = WithinSizeParameters(previousObject, newObject);
+        bool sizeCondition = BasicPrefabWithinSizeParameters(previousObject, newObject);
 
         return colourCondition && sizeCondition;
     }
-
-    private bool WithinColourParameters(GameObject previousObject, GameObject newObject)
+    private bool BasicPrefabWithinColourParameters(GameObject previousObject, GameObject newObject)
     {
         Color previousObjectColour = Color.white;
         Color newObjectColour = Color.white;
@@ -196,8 +228,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
             (previousObjectColour == Color.green && newObjectColour != new Color(1.0f, 1.0f, 0.0f)) ||
             (previousObjectColour == new Color(1.0f, 1.0f, 0.0f) && newObjectColour != Color.green);
     }
-
-    private bool WithinSizeParameters(GameObject previousObject, GameObject newObject)
+    private bool BasicPrefabWithinSizeParameters(GameObject previousObject, GameObject newObject)
     {
 
 
@@ -205,31 +236,6 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         return true;
     }
 
-    private Vector3 NewRelativeObjectPosition(GameObject newObj, GameObject oldObj)
-    {
-        float newObjectLength = 0;
-        float oldObjectLength = 0;
-
-        try
-        {
-            newObjectLength = newObj.transform.GetChild(0).transform.lossyScale.x / 2;
-        }
-        catch (UnityException e)
-        {
-            newObjectLength = newObj.transform.lossyScale.x / 2;
-        }
-
-        try
-        {
-            oldObjectLength = oldObj.transform.GetChild(0).transform.lossyScale.x / 2;
-        }
-        catch (UnityException e)
-        {
-            oldObjectLength = oldObj.transform.lossyScale.x / 2;
-        }
-
-        return new Vector3(newObjectLength + oldObjectLength, 0, 0);
-    }
 
     private void DisplayError(string msg)
     {
