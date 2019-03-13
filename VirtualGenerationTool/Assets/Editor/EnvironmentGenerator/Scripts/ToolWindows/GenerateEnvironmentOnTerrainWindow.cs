@@ -15,7 +15,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
     private int _maximumRowsOfSeries = 5;
 
     private int _loopFailCount = 0;
-    //10 million times, gives acceptable 'lock-out' time (will need modifying)
+    //1 million times, gives unacceptable 'lock-out' time (will need modifying)
     private const int _maxLoopFail = 1000;
 
     void OnGUI()
@@ -53,7 +53,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         EditorGUI.BeginDisabledGroup(!_terrainTarget);
         if (GUILayout.Button(StringConstants.GenerateEnvironment_ButtonText) && false)
         {
-            BasicPrefabGenerationAlgorithm();
+            //BasicPrefabGenerationAlgorithm();
         }
         EditorGUILayout.Space();
         if (GUILayout.Button("Generate using models"))
@@ -67,11 +67,21 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
     private void ModelPrefabGenerationAlgorithm()
     {
         Object[] models = GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath);
-        Debug.Log(models.Length);
-    }
-    
 
-    private Vector3 NewRelativeObjectPosition(GameObject newObj, GameObject oldObj)
+
+
+        //foreach (Object o in models)
+        //{
+        //    Transform transform = ((GameObject)o).transform.GetChild(0).transform;
+
+        //    Mesh mesh = transform.GetComponent<MeshFilter>().sharedMesh;
+        //    Vector3[] vertices = mesh.vertices;
+
+        //    Debug.Log(o.name + " " + vertices.Length);
+        //}
+    }
+
+    private Vector3 BasicPrefabNewRelativeObjectPosition(GameObject newObj, GameObject oldObj)
     {
         float newObjectLength = 0;
         float oldObjectLength = 0;
@@ -109,7 +119,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                 BasicPrefabGenerateCityStreets(prefabs);
                 break;
             default:
-                DisplayError("Switch statement 'default' hit");
+                GlobalMethods.DisplayError("Switch statement 'default' hit");
                 break;
         }
         
@@ -124,7 +134,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
             if (!startVector.OperationSuccess)
             {
-                DisplayError("Failed to seed environment with initial start vector\n\nLikely an issue with input vector dimensions compared with the Terrain's vertice coordinates");
+                GlobalMethods.DisplayError("Failed to seed environment with initial start vector\n\nLikely an issue with input vector dimensions compared with the Terrain's vertice coordinates");
                 return;
             }
 
@@ -161,7 +171,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                     //exit method if loop limit reached, an error has occurred
                     if (++_loopFailCount >= _maxLoopFail)
                     {
-                        DisplayError(StringConstants.Error_ContinousLoopError);
+                        GlobalMethods.DisplayError(StringConstants.Error_ContinousLoopError);
                         return;
                     }
                 }
@@ -171,7 +181,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                 //set the original position
                 prefab.transform.position = previousPrefab.transform.position;
                 //translate the position relative to the previous objects rotation
-                prefab.transform.Translate(NewRelativeObjectPosition(prefab, previousPrefab), previousPrefab.transform);
+                prefab.transform.Translate(BasicPrefabNewRelativeObjectPosition(prefab, previousPrefab), previousPrefab.transform);
                 //rotate the new object to line up with others
                 prefab.transform.rotation = previousPrefab.transform.rotation;
 
@@ -236,10 +246,5 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         return true;
     }
 
-
-    private void DisplayError(string msg)
-    {
-        EditorUtility.DisplayDialog(StringConstants.Error, msg, "OK");
-    }
 
 }
