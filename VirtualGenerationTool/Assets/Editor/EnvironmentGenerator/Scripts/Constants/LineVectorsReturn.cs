@@ -8,7 +8,7 @@ public class LineVectorsReturn
     //vector list
     private List<Vector3> _vectors = new List<Vector3>();
 
-    //custom add functions
+    //custom functions
     private bool Add(Vector3 vector)
     {
         _vectors.Add(vector);
@@ -19,6 +19,30 @@ public class LineVectorsReturn
         _vectors.Insert(index, vector);
         return _vectors[index] == vector;
     }
+    public void Sort()
+    {
+        _vectors.Sort(CustomVector3Compare);
+    }
+    private int CustomVector3Compare(Vector3 value1, Vector3 value2)
+    {
+        if (value1.x < value2.x)
+            return -1;
+        else if (value1.x == value2.x)
+            if (value1.y < value2.y)
+                return -1;
+            else if (value1.y == value2.y)
+                if (value1.z < value2.z)
+                    return -1;
+                else if (value1.z == value2.z)
+                    return 0;
+                else
+                    return 1;
+            else
+                return 1;
+        else
+            return 1;
+    }
+
 
     //constructors
     public LineVectorsReturn()
@@ -48,7 +72,7 @@ public class LineVectorsReturn
     //many implement checks that are simply precausions
     public bool AddVectorToLine(Vector3 vector)
     {
-        return !_vectors.Contains(vector) && GlobalMethods.VectorsInLine(_vectors[0], vector) ? Add(vector) : false;
+        return !_vectors.Contains(vector) ? Add(vector) : false;
     }
     public bool RemoveVectorFromLine(Vector3 vector)
     {
@@ -56,7 +80,7 @@ public class LineVectorsReturn
     }
     public bool AddVectorToLineAtIndex(Vector3 vector, int index)
     {
-        return !_vectors.Contains(vector) && GlobalMethods.VectorsInLine(_vectors[0], vector) ? Insert(vector, index) : false;
+        return !_vectors.Contains(vector) ? Insert(vector, index) : false;
     }
     public bool RemoveVectorAtIndex(int index)
     {
