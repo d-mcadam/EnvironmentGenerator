@@ -230,26 +230,6 @@ public class GlobalMethods {
         return new VectorBoolReturn(new Vector3(x, y, z) + terrain.transform.position);
     }
 
-    public static int CustomVector3Compare(Vector3 value1, Vector3 value2)
-    {
-        if (value1.x < value2.x)
-            return -1;
-        else if (value1.x == value2.x)
-            if (value1.y < value2.y)
-                return -1;
-            else if (value1.y == value2.y)
-                if (value1.z < value2.z)
-                    return -1;
-                else if (value1.z == value2.z)
-                    return 0;
-                else
-                    return 1;
-            else
-                return 1;
-        else
-            return 1;
-    }
-
     //vectors only required to have exactly 2 coordinates identical
     //if the 3rd coordinate was identical, it'd be the same vector
     public static bool VectorsInLine(Vector3 v1, Vector3 v2)
@@ -321,13 +301,13 @@ public class GlobalMethods {
                     }
 
                     //if the vector matched with a line array, add it to the same array
-                    if (matchSuccess){  line.AddVectorToLine(vector);   break;  }
+                    if (matchSuccess) { line.AddVectorToLine(vector); break; }
 
                 }//end of foreach line in filteredList
 
                 //if, after looping through all of the line arrays in the filtered list, there is still no match,
                 //create a new line array object and save it to the filtered list
-                if (!matchSuccess)  filteredList.Add(new LineVectorsReturn(new Vector3[] { vertex, vector }));
+                if (!matchSuccess) filteredList.Add(new LineVectorsReturn(new Vector3[] { vertex, vector }));
 
             }//end of foreach vector in vectorsInLine
 
@@ -354,9 +334,21 @@ public class GlobalMethods {
         //sort all line arrays in master collection
         //=========================================
 
+
         foreach (LineVectorsReturn line in lineCollection)
-            System.Array.Sort(line.Vectors.ToArray(), CustomVector3Compare);
-        
+            line.Sort();
+
+        //
+        //remove duplicate line arrays
+        //============================
+
+        List<LineVectorsReturn> duplicates = new List<LineVectorsReturn>();
+        for (int i = 0; i < lineCollection.Count; i++)
+            if (!duplicates.Contains(lineCollection[i]))
+                for (int j = i + 1; j < lineCollection.Count; j++)
+                    if (DuplicateArraysDetected(lineCollection[i], lineCollection[j]))
+                        duplicates.Add(lineCollection[j]);
+
         //return the master list
         return lineCollection;
     }
@@ -389,6 +381,22 @@ public class GlobalMethods {
                     DisplayError("Switch statement hit default in CheckElementsInList");
                     return false;
             }
+        }
+
+        return true;
+    }
+
+    private static bool DuplicateArraysDetected(LineVectorsReturn l1, LineVectorsReturn l2)
+    {
+        if (l1.Vectors.Count != l2.Vectors.Count)
+            return false;
+
+        for (int i = 0; i < l1.Vectors.Count; i++)
+        {
+            Vector3 v1 = l1.Vectors[i], v2 = l2.Vectors[i];
+
+            if (v1.x != v2.x || v1.y != v2.y || v1.z != v2.z)
+                return false;
         }
 
         return true;
