@@ -66,9 +66,32 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
     private void ModelPrefabGenerationAlgorithm()
     {
-        Object[] models = GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath);
+        GameObject models = (GameObject)GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath)[0];
 
+        Transform t = models.transform.GetChild(0).transform;
+        Mesh mesh = t.GetComponent<MeshFilter>().sharedMesh;
+        Vector3[] vertices = mesh.vertices;
+        Vector3[] vs = new Vector3[] { new Vector3(-67.3f, 14.2f, 0f), new Vector3(-53.1f, 14.2f, 0f), new Vector3(-22.3f, 14.2f, 0f),
+                                       new Vector3(-67.3f, 0f, 0f), new Vector3(-53.1f, 0f, 0f), new Vector3(-22.3f, 0f, 0f),
+                                       new Vector3(-53.1f, 14.2f, 14.2f), new Vector3(-22.3f, 14.2f, 14.2f), new Vector3(-53.1f, 0f, 14.2f),
+                                       new Vector3(-22.3f, 0f, 14.2f), new Vector3(-67.3f, 14.2f, 30.8f), new Vector3(-53.1f, 14.2f, 30.8f),
+                                       new Vector3(-67.3f, 0f, 30.8f), new Vector3(-53.1f, 0f, 30.8f) };
 
+        List<LineVectorsReturn> lineArrays = GlobalMethods.SortMeshVerticesToLineArrays(vs);
+
+        for (int i = 0; i < lineArrays.Count; i++)
+        {
+            Debug.Log("Line: " + i);
+
+            for (int j = 0; j < lineArrays[i].Vectors.Count; j++)
+            {
+                Debug.Log("Element: " + j + ": " + lineArrays[i].Vectors[j]);
+
+            }
+        }
+
+        //Debug.Log(vertices.Length);
+        //Debug.Log(lineArrays.Count);
 
         //foreach (Object o in models)
         //{
@@ -80,6 +103,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         //    Debug.Log(o.name + " " + vertices.Length);
         //}
     }
+    
 
     private Vector3 BasicPrefabNewRelativeObjectPosition(GameObject newObj, GameObject oldObj)
     {
@@ -245,6 +269,5 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
         return true;
     }
-
-
+    
 }
