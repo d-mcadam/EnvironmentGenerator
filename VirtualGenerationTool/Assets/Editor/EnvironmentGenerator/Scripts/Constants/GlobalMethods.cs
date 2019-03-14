@@ -333,8 +333,7 @@ public class GlobalMethods {
         //
         //sort all line arrays in master collection
         //=========================================
-
-
+        
         foreach (LineVectorsReturn line in lineCollection)
             line.Sort();
 
@@ -342,6 +341,7 @@ public class GlobalMethods {
         //remove duplicate line arrays
         //============================
 
+        //collect list of duplicates
         List<LineVectorsReturn> duplicates = new List<LineVectorsReturn>();
         for (int i = 0; i < lineCollection.Count; i++)
             if (!duplicates.Contains(lineCollection[i]))
@@ -349,8 +349,37 @@ public class GlobalMethods {
                     if (DuplicateArraysDetected(lineCollection[i], lineCollection[j]))
                         duplicates.Add(lineCollection[j]);
 
+        //remove the duplicates from master list (done this way to avoid concurrent modification exceptions)
+        foreach (LineVectorsReturn duplicate in duplicates)
+            lineCollection.Remove(duplicate);
+
         //return the master list
         return lineCollection;
+    }
+
+    public static List<Vector3> FindEdgeCorners(List<LineVectorsReturn> edges)
+    {
+        //find a list of all vectors that appear at the end of lines / edges
+        List<Vector3> cornersList = new List<Vector3>();
+        foreach (LineVectorsReturn edge in edges)
+        {
+            if (!cornersList.Contains(edge.Vectors[0]))
+                cornersList.Add(edge.Vectors[0]);
+            if (!cornersList.Contains(edge.Vectors[edge.Vectors.Count - 1]))
+                cornersList.Add(edge.Vectors[edge.Vectors.Count - 1]);
+        }
+
+        //find all the identified corners that also appear in the center of a vector array
+        List<Vector3> falseVectors = new List<Vector3>();
+        foreach (Vector3 vector in cornersList)
+            if (!VectorIsACorner(vector, edges))
+                falseVectors.Add(vector);
+
+        //remove all the identified corners that also appear in the center of a vector array
+        foreach (Vector3 vector in falseVectors)
+            cornersList.Remove(vector);
+
+        return cornersList;
     }
 
     private static bool VectorMatchesElementsInLine(Vector3 vector, LineVectorsReturn line, VectorLineCompareType type)
@@ -402,10 +431,126 @@ public class GlobalMethods {
         return true;
     }
 
+    private static bool VectorIsACorner(Vector3 vector, List<LineVectorsReturn> edges)
+    {
+        foreach (LineVectorsReturn edge in edges)
+            for (int i = 1; i < edge.Vectors.Count - 1; i++)
+                if (EqualVectors(vector, edge.Vectors[i]))
+                    return false;
+
+        return true;
+    }
+
+    private static bool EqualVectors(Vector3 v1, Vector3 v2)
+    {
+        return v1.x == v2.x && v1.y == v2.y && v1.z == v2.z;
+    }
+
 
     public static void DisplayError(string msg)
     {
         EditorUtility.DisplayDialog(StringConstants.Error, msg, "OK");
+    }
+
+    public static Vector3[] TestData
+    {
+        get
+        {
+            float mod = 14.2f / 3f;
+            return new Vector3[] {
+           /*A*/new Vector3(-67.3f, 14.2f, 0f), 
+           /*B*/new Vector3(-53.1f, 14.2f, 0f), 
+           /*C*/new Vector3(-22.3f, 14.2f, 0f),
+           /*D*/new Vector3(-67.3f, 0f, 0f), 
+           /*E*/new Vector3(-53.1f, 0f, 0f), 
+           /*F*/new Vector3(-22.3f, 0f, 0f),
+           /*G*/new Vector3(-53.1f, 14.2f, 14.2f), 
+           /*H*/new Vector3(-22.3f, 14.2f, 14.2f), 
+           /*I*/new Vector3(-53.1f, 0f, 14.2f),
+           /*J*/new Vector3(-22.3f, 0f, 14.2f), 
+           /*K*/new Vector3(-67.3f, 14.2f, 30.8f), 
+           /*L*/new Vector3(-53.1f, 14.2f, 30.8f),
+           /*M*/new Vector3(-67.3f, 0f, 30.8f), 
+           /*N*/new Vector3(-53.1f, 0f, 30.8f),
+           /*A-B*/
+                new Vector3(-67.3f + mod, 14.2f, 0f),
+                new Vector3(-53.1f - mod, 14.2f, 0f),
+           /*A-D*/
+                new Vector3(-67.3f, 14.2f - mod, 0f),
+                new Vector3(-67.3f, mod, 0f),
+           /*B-E*/
+                new Vector3(-53.1f, 14.2f - mod, 0f),
+                new Vector3(-53.1f, mod, 0f),
+           /*D-E*/
+                new Vector3(-67.3f + mod, 0f, 0f),
+                new Vector3(-53.1f - mod, 0f, 0f),
+           /*K-L*/
+                new Vector3(-67.3f - mod, 14.2f, 30.8f),
+                new Vector3(-53.1f + mod, 14.2f, 30.8f),
+           /*K-M*/
+                new Vector3(-67.3f, 14.2f - mod, 30.8f),
+                new Vector3(-67.3f, mod, 30.8f),
+           /*L-N*/
+                new Vector3(-53.1f, 14.2f - mod, 30.8f),
+                new Vector3(-53.1f, mod, 30.8f),
+           /*M-N*/
+                new Vector3(-67.3f + mod, 0f, 30.8f),
+                new Vector3(-53.1f - mod, 0f, 30.8f),
+           /*B-G*/
+                new Vector3(-53.1f, 14.2f, mod),
+                new Vector3(-53.1f, 14.2f, 14.2f - mod),
+           /*G-I*/
+                new Vector3(-53.1f, 14.2f - mod, 14.2f),
+                new Vector3(-53.1f, mod, 14.2f),
+           /*E-I*/
+                new Vector3(-53.1f, 0f, mod),
+                new Vector3(-53.1f, 0f, 14.2f - mod),
+           /*C-H*/
+                new Vector3(-22.3f, 14.2f, mod),
+                new Vector3(-22.3f, 14.2f, 14.2f - mod),
+           /*C-F*/
+                new Vector3(-22.3f, 14.2f - mod, 0f),
+                new Vector3(-22.3f, mod, 0f),
+           /*H-J*/
+                new Vector3(-22.3f, 14.2f - mod, 14.2f),
+                new Vector3(-22.3f, mod, 14.2f),
+           /*F-J*/
+                new Vector3(-22.3f, 0f, mod),
+                new Vector3(-22.3f, 0f, 14.2f - mod),
+           /*A-K*/
+                new Vector3(-67.3f, 14.2f, 7.7f),
+                new Vector3(-67.3f, 14.2f, 15.4f),
+                new Vector3(-67.3f, 14.2f, 23.1f),
+           /*D-M*/
+                new Vector3(-67.3f, 0f, 7.7f),
+                new Vector3(-67.3f, 0f, 15.4f),
+                new Vector3(-67.3f, 0f, 23.1f),
+           /*B-L*/
+                new Vector3(-53.1f, 14.2f, 7.7f),
+                new Vector3(-53.1f, 14.2f, 15.4f),
+                new Vector3(-53.1f, 14.2f, 23.1f),
+           /*E-N*/
+                new Vector3(-53.1f, 0f, 7.7f),
+                new Vector3(-53.1f, 0f, 15.4f),
+                new Vector3(-53.1f, 0f, 23.1f),
+           /*B-C*/
+                new Vector3(-45.4f, 14.2f, 0f),
+                new Vector3(-37.7f, 14.2f, 0f),
+                new Vector3(-30f, 14.2f, 0f),
+           /*E-F*/
+                new Vector3(-45.4f, 0f, 0f),
+                new Vector3(-37.7f, 0f, 0f),
+                new Vector3(-30f, 0f, 0f),
+           /*G-H*/
+                new Vector3(-45.4f, 14.2f, 14.2f),
+                new Vector3(-37.7f, 14.2f, 14.2f),
+                new Vector3(-30f, 14.2f, 14.2f),
+           /*I-J*/
+                new Vector3(-45.4f, 0f, 14.2f),
+                new Vector3(-37.7f, 0f, 14.2f),
+                new Vector3(-30f, 0f, 14.2f),
+            };
+        }
     }
 
 }

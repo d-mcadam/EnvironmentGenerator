@@ -66,42 +66,38 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
     private void ModelPrefabGenerationAlgorithm()
     {
-        GameObject models = (GameObject)GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath)[0];
+        GameObject model = (GameObject)GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath)[0];
 
-        Transform t = models.transform.GetChild(0).transform;
+        Transform t = model.transform.GetChild(0).transform;
         Mesh mesh = t.GetComponent<MeshFilter>().sharedMesh;
         Vector3[] vertices = mesh.vertices;
-        Vector3[] vs = new Vector3[] { new Vector3(-67.3f, 14.2f, 0f), new Vector3(-53.1f, 14.2f, 0f), new Vector3(-22.3f, 14.2f, 0f),
-                                       new Vector3(-67.3f, 0f, 0f), new Vector3(-53.1f, 0f, 0f), new Vector3(-22.3f, 0f, 0f),
-                                       new Vector3(-53.1f, 14.2f, 14.2f), new Vector3(-22.3f, 14.2f, 14.2f), new Vector3(-53.1f, 0f, 14.2f),
-                                       new Vector3(-22.3f, 0f, 14.2f), new Vector3(-67.3f, 14.2f, 30.8f), new Vector3(-53.1f, 14.2f, 30.8f),
-                                       new Vector3(-67.3f, 0f, 30.8f), new Vector3(-53.1f, 0f, 30.8f) };
+        Vector3[] vs = GlobalMethods.TestData;
 
         List<LineVectorsReturn> lineArrays = GlobalMethods.SortMeshVerticesToLineArrays(vs);
 
-        for (int i = 0; i < lineArrays.Count; i++)
-        {
-            Debug.Log("Line: " + i);
+        List<Vector3> corners = GlobalMethods.FindEdgeCorners(lineArrays);
 
-            for (int j = 0; j < lineArrays[i].Vectors.Count; j++)
-            {
-                Debug.Log("Element: " + j + ": " + lineArrays[i].Vectors[j]);
+        //if the test data was an object in 3d space, we could get the 
+        //objects 'transform' and transform a mesh point to world space:
+        //
+        //          Vector3 worldPoint = MyWorldModel.transform.TransformPoint(corners[0]);
+        //
 
-            }
-        }
-
-        //Debug.Log(vertices.Length);
-        //Debug.Log(lineArrays.Count);
-
-        //foreach (Object o in models)
+        ////used to display test data, organised and duplicated removed
+        //for (int i = 0; i < lineArrays.Count; i++)
         //{
-        //    Transform transform = ((GameObject)o).transform.GetChild(0).transform;
+        //    Debug.Log("Line: " + i);
 
-        //    Mesh mesh = transform.GetComponent<MeshFilter>().sharedMesh;
-        //    Vector3[] vertices = mesh.vertices;
+        //    for (int j = 0; j < lineArrays[i].Vectors.Count; j++)
+        //    {
+        //        Debug.Log("Element: " + j + ": " + lineArrays[i].Vectors[j]);
 
-        //    Debug.Log(o.name + " " + vertices.Length);
+        //    }
         //}
+
+        //foreach (Vector3 v in corners)
+        //    Debug.Log(v);
+
     }
     
 
