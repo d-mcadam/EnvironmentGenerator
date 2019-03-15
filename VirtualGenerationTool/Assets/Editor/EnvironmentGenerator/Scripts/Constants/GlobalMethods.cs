@@ -160,6 +160,7 @@ public class GlobalMethods {
 
     }
 
+
     public static Object[] GetPrefabs(string path)
     {
         //get a list of all the asset file paths (using lists for easy add / remove methods)
@@ -227,6 +228,329 @@ public class GlobalMethods {
 
         //return the generated starting vector
         return new VectorBoolReturn(new Vector3(x, y, z) + terrain.transform.position);
+    }
+
+    //vectors only required to have exactly 2 coordinates identical
+    //if the 3rd coordinate was identical, it'd be the same vector
+    public static bool VectorsInLine(Vector3 v1, Vector3 v2)
+    {
+        return (v1.x == v2.x && v1.y == v2.y) || (v1.x == v2.x && v1.z == v2.z) || (v1.y == v2.y && v1.z == v2.z);
+    }
+
+    public static List<LineVectorsReturn> SortMeshVerticesToLineArrays(Vector3[] vertices)
+    {
+        //declare a 'master list'
+        List<LineVectorsReturn> lineCollection = new List<LineVectorsReturn>();
+
+        foreach (Vector3 vertex in vertices)
+        {
+            //
+            //get all the vectors in line with vertex
+            //=======================================
+
+            //declare a list to save any vectors that appear in line with this current one
+            List<Vector3> vectorsInLine = new List<Vector3>();
+
+            //get a list of all vectors in line on a single axis with current one
+            foreach (Vector3 v in vertices)
+            {
+                //if its the same vertex, skip it
+                if (vertex == v)
+                    continue;
+
+                //if vector appears in line, save it
+                if (VectorsInLine(vertex, v))
+                    vectorsInLine.Add(v);
+            }//end of foreach v in vertices
+
+            //
+            //sort the vectors in to line arrays
+            //==================================
+
+            //declare a list to save filtered line objects
+            List<LineVectorsReturn> filteredList = new List<LineVectorsReturn>();
+
+            //declare an initial, default line array to start
+            LineVectorsReturn defaultLineArray = new LineVectorsReturn();
+            //save the current vertex in this default array
+            defaultLineArray.AddVectorToLine(vertex);
+
+            //add the initial default array to filtered list
+            filteredList.Add(defaultLineArray);
+
+            //go through all vectors that were found to be in line with current vector
+            foreach (Vector3 vector in vectorsInLine)
+            {
+                //boolean to mark the 'vector' has matched in the 'line'
+                bool matchSuccess = false;
+
+                //check the current vector against every array in the filtered list
+                foreach (LineVectorsReturn line in filteredList)
+                {
+                    //find which pair of coordinates match with the default search vertex
+                    if (vertex.x == vector.x && vertex.y == vector.y)
+                        matchSuccess = VectorMatchesElementsInLine(vector, line, VectorLineCompareType.XY);
+                    else if (vertex.y == vector.y && vertex.z == vector.z)
+                        matchSuccess = VectorMatchesElementsInLine(vector, line, VectorLineCompareType.YZ);
+                    else if (vertex.x == vector.x && vertex.z == vector.z)
+                        matchSuccess = VectorMatchesElementsInLine(vector, line, VectorLineCompareType.XZ);
+                    else
+                    {
+                        DisplayError("Should not have reached this part of 'if' statement. Vector should not have been assigned to this list \"vectorsInLine\".");
+                        return null;
+                    }
+
+                    //if the vector matched with a line array, add it to the same array
+                    if (matchSuccess) { line.AddVectorToLine(vector); break; }
+
+                }//end of foreach line in filteredList
+
+                //if, after looping through all of the line arrays in the filtered list, there is still no match,
+                //create a new line array object and save it to the filtered list
+                if (!matchSuccess) filteredList.Add(new LineVectorsReturn(new Vector3[] { vertex, vector }));
+
+            }//end of foreach vector in vectorsInLine
+
+            //
+            //add sorted line arrays to master collection
+            //===========================================
+
+            foreach (LineVectorsReturn array in filteredList)
+            {
+                //create a copy of the array (removes memory pointer)
+                LineVectorsReturn copy = new LineVectorsReturn();
+                foreach (Vector3 vector in array.Vectors)
+                {
+                    copy.AddVectorToLine(vector);
+                }
+
+                //save the copy
+                lineCollection.Add(copy);
+            }
+
+        }//end of foreach vertex in vertices
+
+        //
+        //sort all line arrays in master collection
+        //=========================================
+        
+        foreach (LineVectorsReturn line in lineCollection)
+            line.Sort();
+
+        //
+        //remove duplicate line arrays
+        //============================
+
+        //collect list of duplicates
+        List<LineVectorsReturn> duplicates = new List<LineVectorsReturn>();
+        for (int i = 0; i < lineCollection.Count; i++)
+            if (!duplicates.Contains(lineCollection[i]))
+                for (int j = i + 1; j < lineCollection.Count; j++)
+                    if (DuplicateArraysDetected(lineCollection[i], lineCollection[j]))
+                        duplicates.Add(lineCollection[j]);
+
+        //remove the duplicates from master list (done this way to avoid concurrent modification exceptions)
+        foreach (LineVectorsReturn duplicate in duplicates)
+            lineCollection.Remove(duplicate);
+
+        //return the master list
+        return lineCollection;
+    }
+
+    public static List<Vector3> FindEdgeCorners(List<LineVectorsReturn> edges)
+    {
+        //find a list of all vectors that appear at the end of lines / edges
+        List<Vector3> cornersList = new List<Vector3>();
+        foreach (LineVectorsReturn edge in edges)
+        {
+            if (!cornersList.Contains(edge.Vectors[0]))
+                cornersList.Add(edge.Vectors[0]);
+            if (!cornersList.Contains(edge.Vectors[edge.Vectors.Count - 1]))
+                cornersList.Add(edge.Vectors[edge.Vectors.Count - 1]);
+        }
+
+        //find all the identified corners that also appear in the center of a vector array
+        List<Vector3> falseVectors = new List<Vector3>();
+        foreach (Vector3 vector in cornersList)
+            if (!VectorIsACorner(vector, edges))
+                falseVectors.Add(vector);
+
+        //remove all the identified corners that also appear in the center of a vector array
+        foreach (Vector3 vector in falseVectors)
+            cornersList.Remove(vector);
+
+        return cornersList;
+    }
+
+    private static bool VectorMatchesElementsInLine(Vector3 vector, LineVectorsReturn line, VectorLineCompareType type)
+    {
+        foreach (Vector3 v in line.Vectors)
+        {
+            switch (type)
+            {
+                case VectorLineCompareType.XY:
+
+                    if (vector.x != v.x || vector.y != v.y)
+                        return false;
+
+                    break;
+                case VectorLineCompareType.YZ:
+
+                    if (vector.z != v.z || vector.y != v.y)
+                        return false;
+
+                    break;
+                case VectorLineCompareType.XZ:
+
+                    if (vector.x != v.x || vector.z != v.z)
+                        return false;
+
+                    break;
+                default:
+                    DisplayError("Switch statement hit default in CheckElementsInList");
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool DuplicateArraysDetected(LineVectorsReturn l1, LineVectorsReturn l2)
+    {
+        if (l1.Vectors.Count != l2.Vectors.Count)
+            return false;
+
+        for (int i = 0; i < l1.Vectors.Count; i++)
+        {
+            Vector3 v1 = l1.Vectors[i], v2 = l2.Vectors[i];
+
+            if (v1.x != v2.x || v1.y != v2.y || v1.z != v2.z)
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool VectorIsACorner(Vector3 vector, List<LineVectorsReturn> edges)
+    {
+        foreach (LineVectorsReturn edge in edges)
+            for (int i = 1; i < edge.Vectors.Count - 1; i++)
+                if (EqualVectors(vector, edge.Vectors[i]))
+                    return false;
+
+        return true;
+    }
+
+    private static bool EqualVectors(Vector3 v1, Vector3 v2)
+    {
+        return v1.x == v2.x && v1.y == v2.y && v1.z == v2.z;
+    }
+
+
+    public static void DisplayError(string msg)
+    {
+        EditorUtility.DisplayDialog(StringConstants.Error, msg, "OK");
+    }
+
+    public static Vector3[] TestData
+    {
+        get
+        {
+            float mod = 14.2f / 3f;
+            return new Vector3[] {
+           /*A*/new Vector3(-67.3f, 14.2f, 0f), 
+           /*B*/new Vector3(-53.1f, 14.2f, 0f), 
+           /*C*/new Vector3(-22.3f, 14.2f, 0f),
+           /*D*/new Vector3(-67.3f, 0f, 0f), 
+           /*E*/new Vector3(-53.1f, 0f, 0f), 
+           /*F*/new Vector3(-22.3f, 0f, 0f),
+           /*G*/new Vector3(-53.1f, 14.2f, 14.2f), 
+           /*H*/new Vector3(-22.3f, 14.2f, 14.2f), 
+           /*I*/new Vector3(-53.1f, 0f, 14.2f),
+           /*J*/new Vector3(-22.3f, 0f, 14.2f), 
+           /*K*/new Vector3(-67.3f, 14.2f, 30.8f), 
+           /*L*/new Vector3(-53.1f, 14.2f, 30.8f),
+           /*M*/new Vector3(-67.3f, 0f, 30.8f), 
+           /*N*/new Vector3(-53.1f, 0f, 30.8f),
+           /*A-B*/
+                new Vector3(-67.3f + mod, 14.2f, 0f),
+                new Vector3(-53.1f - mod, 14.2f, 0f),
+           /*A-D*/
+                new Vector3(-67.3f, 14.2f - mod, 0f),
+                new Vector3(-67.3f, mod, 0f),
+           /*B-E*/
+                new Vector3(-53.1f, 14.2f - mod, 0f),
+                new Vector3(-53.1f, mod, 0f),
+           /*D-E*/
+                new Vector3(-67.3f + mod, 0f, 0f),
+                new Vector3(-53.1f - mod, 0f, 0f),
+           /*K-L*/
+                new Vector3(-67.3f - mod, 14.2f, 30.8f),
+                new Vector3(-53.1f + mod, 14.2f, 30.8f),
+           /*K-M*/
+                new Vector3(-67.3f, 14.2f - mod, 30.8f),
+                new Vector3(-67.3f, mod, 30.8f),
+           /*L-N*/
+                new Vector3(-53.1f, 14.2f - mod, 30.8f),
+                new Vector3(-53.1f, mod, 30.8f),
+           /*M-N*/
+                new Vector3(-67.3f + mod, 0f, 30.8f),
+                new Vector3(-53.1f - mod, 0f, 30.8f),
+           /*B-G*/
+                new Vector3(-53.1f, 14.2f, mod),
+                new Vector3(-53.1f, 14.2f, 14.2f - mod),
+           /*G-I*/
+                new Vector3(-53.1f, 14.2f - mod, 14.2f),
+                new Vector3(-53.1f, mod, 14.2f),
+           /*E-I*/
+                new Vector3(-53.1f, 0f, mod),
+                new Vector3(-53.1f, 0f, 14.2f - mod),
+           /*C-H*/
+                new Vector3(-22.3f, 14.2f, mod),
+                new Vector3(-22.3f, 14.2f, 14.2f - mod),
+           /*C-F*/
+                new Vector3(-22.3f, 14.2f - mod, 0f),
+                new Vector3(-22.3f, mod, 0f),
+           /*H-J*/
+                new Vector3(-22.3f, 14.2f - mod, 14.2f),
+                new Vector3(-22.3f, mod, 14.2f),
+           /*F-J*/
+                new Vector3(-22.3f, 0f, mod),
+                new Vector3(-22.3f, 0f, 14.2f - mod),
+           /*A-K*/
+                new Vector3(-67.3f, 14.2f, 7.7f),
+                new Vector3(-67.3f, 14.2f, 15.4f),
+                new Vector3(-67.3f, 14.2f, 23.1f),
+           /*D-M*/
+                new Vector3(-67.3f, 0f, 7.7f),
+                new Vector3(-67.3f, 0f, 15.4f),
+                new Vector3(-67.3f, 0f, 23.1f),
+           /*B-L*/
+                new Vector3(-53.1f, 14.2f, 7.7f),
+                new Vector3(-53.1f, 14.2f, 15.4f),
+                new Vector3(-53.1f, 14.2f, 23.1f),
+           /*E-N*/
+                new Vector3(-53.1f, 0f, 7.7f),
+                new Vector3(-53.1f, 0f, 15.4f),
+                new Vector3(-53.1f, 0f, 23.1f),
+           /*B-C*/
+                new Vector3(-45.4f, 14.2f, 0f),
+                new Vector3(-37.7f, 14.2f, 0f),
+                new Vector3(-30f, 14.2f, 0f),
+           /*E-F*/
+                new Vector3(-45.4f, 0f, 0f),
+                new Vector3(-37.7f, 0f, 0f),
+                new Vector3(-30f, 0f, 0f),
+           /*G-H*/
+                new Vector3(-45.4f, 14.2f, 14.2f),
+                new Vector3(-37.7f, 14.2f, 14.2f),
+                new Vector3(-30f, 14.2f, 14.2f),
+           /*I-J*/
+                new Vector3(-45.4f, 0f, 14.2f),
+                new Vector3(-37.7f, 0f, 14.2f),
+                new Vector3(-30f, 0f, 14.2f),
+            };
+        }
     }
 
 }
