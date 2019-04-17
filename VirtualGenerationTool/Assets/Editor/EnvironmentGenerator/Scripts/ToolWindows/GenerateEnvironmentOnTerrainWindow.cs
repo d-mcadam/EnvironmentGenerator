@@ -8,15 +8,17 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
     private Terrain _terrainTarget;
 
+    //possibly make this an editable list
     private GenerateWorldTheme _generatorTheme = GenerateWorldTheme.ModernCities;
 
-    private int _maximumNumberOfObjects = 105;
-    private int _maximumNumberInSeriesOrCluster = 20;
-    private int _maximumRowsOfSeries = 5;
+    private int _maximumNumberOfObjects = 20;
+    private int _maximumNumberInSeriesOrCluster = 5;
+    private int _maximumNumberOfGroups = 5;
 
     private int _loopFailCount = 0;
     //1 million times, gives unacceptable 'lock-out' time (will need modifying)
     private const int _maxLoopFail = 1000;
+
 
     void OnGUI()
     {
@@ -51,9 +53,10 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         //buttons
         EditorGUILayout.Space();
         EditorGUI.BeginDisabledGroup(!_terrainTarget);
-        if (GUILayout.Button(StringConstants.GenerateEnvironment_ButtonText) && false)
+        if (GUILayout.Button(StringConstants.GenerateEnvironment_ButtonText))
         {
             //BasicPrefabGenerationAlgorithm();
+            //CalculateModelFaceArea();
         }
         EditorGUILayout.Space();
         if (GUILayout.Button("Generate using models"))
@@ -63,41 +66,179 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         EditorGUI.EndDisabledGroup();
     }
 
+    private void CalculateModelFaceArea(int[,] points)
+    {
+        //int[,] points = { { 1, 1 }, { 1, 3 }, { 6, 3 }, { 6, 1 } };
+        
+        int n = points.GetLength(0) - 1;
+        int sum = 0;
+
+        for (int i = 0; i <= n - 1; i++)
+        {
+            int val = points[i + 1, 0] * points[i, 1];
+            sum += val;
+        }
+
+        sum += points[0, 0] * points[n, 1];
+        
+        for (int i = 0; i <= n - 1; i++)
+        {
+            int val = points[i, 0] * points[i + 1, 1];
+            sum -= val;
+        }
+
+        sum -= points[n, 0] * points[0, 1];
+
+        sum /= 2;
+
+        if (sum < 0)
+            sum = -sum;
+
+        Debug.Log(sum);
+    }
+
+    private Vector3 NewModelRelativePosition(GameObject oldObj, GameObject newObj)
+    {
+        Vector3 movementVector = GlobalMethods.VectorToMoveObjectInLocalAxis(oldObj.name, newObj.name);
+        
+        return movementVector;
+    }
 
     private void ModelPrefabGenerationAlgorithm()
     {
-        GameObject model = (GameObject)GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath)[0];
 
-        Transform t = model.transform.GetChild(0).transform;
-        Mesh mesh = t.GetComponent<MeshFilter>().sharedMesh;
-        Vector3[] vertices = mesh.vertices;
+        //full generation loop
+        for (int currentTotal = 0; currentTotal < /*-1*/_maximumNumberOfObjects; currentTotal += 0)
+        {
+
+            //get all models
+            Object[] models = GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath);
+
+            //select a random model (generator 'seed')
+            Object model = models[Random.Range(0, models.Length)];
+
+            //give it a starting position
+            VectorBoolReturn startVector = GlobalMethods.StartingVector(new Vector3(), _terrainTarget.terrainData.size, _terrainTarget);
+            if (!startVector.OperationSuccess)
+            {
+                GlobalMethods.DisplayError("Failed to seed environment with initial start vector\n\nLikely an issue with input vector dimensions compared with the Terrain's world vertex coordinates");
+                return;
+            }
+
+            //instantiate the 'seed' model and initiate the generator
+            GameObject newModel = (GameObject)PrefabUtility.InstantiatePrefab(model);
+            newModel.transform.position = startVector.Vector;
+            newModel.transform.rotation = Quaternion.Euler(new Vector3(0, Random.Range(0, 360), 0));
+
+            //save a reference of the previously generated object
+            GameObject previousModel = newModel;      //groupTotal starts at 1
+
+            //series generation loop
+            for (int groupTotal = 1; groupTotal < _maximumNumberInSeriesOrCluster; groupTotal++)
+            {
+                //check if we have reached the maximum, exit full generation loop if so
+                if (groupTotal + currentTotal >= _maximumNumberOfObjects)
+                    goto outerloop;
+
+                //continue selecting models to generate in series
+                Object newObject = models[Random.Range(0, models.Length - 1)];
+                
+                //check if new model fits parameters
+                _loopFailCount = 0;
+                while (!ModelWithinParameters(previousModel, newObject))
+                {
+
+                    //exit method if loop limit reached, an error has occurred
+                    if (++_loopFailCount >= _maxLoopFail)
+                    {
+                        GlobalMethods.DisplayError(StringConstants.Error_ContinousLoopError);
+                        return;
+                    }
+
+                    //if it does NOT satisfy restrictions, choose new object
+                    newObject = models[Random.Range(0, models.Length - 1)];
+
+                }
+
+                //instantiate the selected model to continue the series
+                newModel = (GameObject)PrefabUtility.InstantiatePrefab(newObject);
+
+                //initialise the position to match the previous model
+                newModel.transform.position = previousModel.transform.position;
+
+                //move the object to the new relative position
+                newModel.transform.Translate(NewModelRelativePosition(previousModel, newModel), previousModel.transform);
+
+                //rotate the object to account for its new position
+                newModel.transform.rotation = previousModel.transform.rotation;
+
+                //adjust rotation if the previous object was a Large Industrial building 
+                if (previousModel.name.Contains(StringConstants.LargeIndustrial))
+                    newModel.transform.Rotate(0.0f, -90.0f, 0.0f);
+
+                //save a reference to the pevious model
+                previousModel = newModel;
+
+            }//end of _maximumNumberInSeriesOrCluster loop - series generation loop
+
+            currentTotal += _maximumNumberInSeriesOrCluster;
+
+        }//end of _maximumNumberOfObjects loop - full generation loop
+
+    outerloop:;
+
+        return;
+        //TEST DATA
         Vector3[] vs = GlobalMethods.TestData;
 
+        //get all the edges of the model
         List<LineVectorsReturn> lineArrays = GlobalMethods.SortMeshVerticesToLineArrays(vs);
 
-        List<Vector3> corners = GlobalMethods.FindEdgeCorners(lineArrays);
+        //get the corners of the model
+        List<Vector3> modelCorners = GlobalMethods.FindEdgeCorners(lineArrays);
 
-        //if the test data was an object in 3d space, we could get the 
-        //objects 'transform' and transform a mesh point to world space:
-        //
-        //          Vector3 worldPoint = MyWorldModel.transform.TransformPoint(corners[0]);
-        //
+        List<Vector3> singleFaceVectors = GlobalMethods.FindModelFaceInAxisDirection(modelCorners, AxisDirection.X, true);
 
-        ////used to display test data, organised and duplicated removed
-        //for (int i = 0; i < lineArrays.Count; i++)
-        //{
-        //    Debug.Log("Line: " + i);
+        Vector3 faceCenterGroundLevelVector = GlobalMethods.FaceCenterAtGroundLevel(singleFaceVectors);
 
-        //    for (int j = 0; j < lineArrays[i].Vectors.Count; j++)
-        //    {
-        //        Debug.Log("Element: " + j + ": " + lineArrays[i].Vectors[j]);
+        foreach (Object o in GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath))
+        {
+            Debug.Log(o.name);
 
-        //    }
-        //}
+            GameObject model = (GameObject)o;
 
-        //foreach (Vector3 v in corners)
-        //    Debug.Log(v);
+            Vector3[] vectors = model.transform.GetChild(0).transform.GetComponent<MeshFilter>().sharedMesh.vertices;
 
+            Debug.Log("vertex array count: " + vectors.Length);
+
+            List<LineVectorsReturn> lines = GlobalMethods.SortMeshVerticesToLineArrays(vectors);
+
+            Debug.Log("Line count: " + lines.Count);
+
+            List<Vector3> corners = GlobalMethods.FindEdgeCorners(lines);
+
+            Debug.Log("Corner count: " + corners.Count);
+
+            List<Vector3> faceVectors = GlobalMethods.FindModelFaceInAxisDirection(corners, AxisDirection.X, true);
+
+            Debug.Log("face vector count: " + faceVectors.Count);
+
+            foreach(Vector3 v in faceVectors)
+            {
+                Debug.Log("Face vector: " + v);
+            }
+
+            Vector3 groundlevel = GlobalMethods.FaceCenterAtGroundLevel(faceVectors);
+            Debug.Log("Ground level vector: " + groundlevel);
+        }
+        
+    }
+
+    private bool ModelWithinParameters(GameObject previousObject, Object obj)
+    {
+
+
+        return true;
     }
     
 
@@ -150,7 +291,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         {
             //choose object (this is effectively a 'seed' for the generator)
             Object obj = prefabs[Random.Range(0, prefabs.Length - 1)];
-            VectorBoolReturn startVector = GlobalMethods.GenerateStartingVector(new Vector3(), _terrainTarget.terrainData.size, _terrainTarget);
+            VectorBoolReturn startVector = GlobalMethods.StartingVector(new Vector3(), _terrainTarget.terrainData.size, _terrainTarget);
 
             if (!startVector.OperationSuccess)
             {

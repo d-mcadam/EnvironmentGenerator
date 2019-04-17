@@ -63,7 +63,7 @@ public class GlobalMethods {
             _loopFailCount = 0;
 
             //attempt to get a start vector
-            VectorBoolReturn startVector = GenerateStartingVector(start_point, dimensions, terrain);
+            VectorBoolReturn startVector = StartingVector(start_point, dimensions, terrain);
 
             //check if the operation failed
             if (!startVector.OperationSuccess)
@@ -200,7 +200,7 @@ public class GlobalMethods {
         return prefabs;
     }
 
-    public static VectorBoolReturn GenerateStartingVector(Vector3 start_point, Vector3 dimensions, Terrain terrain)
+    public static VectorBoolReturn StartingVector(Vector3 start_point, Vector3 dimensions, Terrain terrain)
     {
         //generate a random X and Z coordinate between specified boundaries
         float x = Random.Range(start_point.x, start_point.x + dimensions.x);
@@ -235,6 +235,14 @@ public class GlobalMethods {
     public static bool VectorsInLine(Vector3 v1, Vector3 v2)
     {
         return (v1.x == v2.x && v1.y == v2.y) || (v1.x == v2.x && v1.z == v2.z) || (v1.y == v2.y && v1.z == v2.z);
+    }
+
+    public static List<LineVectorsReturn> SortMeshVerticesToLineArrays(GameObject model)
+    {
+        //get the models mesh (always getchild at 0) and then its vertices
+        Vector3[] vertices = model.transform.GetChild(0).transform.GetComponent<MeshFilter>().sharedMesh.vertices;
+
+        return SortMeshVerticesToLineArrays(vertices);
     }
 
     public static List<LineVectorsReturn> SortMeshVerticesToLineArrays(Vector3[] vertices)
@@ -382,6 +390,118 @@ public class GlobalMethods {
         return cornersList;
     }
 
+    public static List<Vector3> FindModelFaceInAxisDirection(List<Vector3> corners, AxisDirection axis, bool positiveDirection)
+    {
+        //need to create groups of corners where the Axis Direction are the same
+        List<List<Vector3>> vectorCollection = new List<List<Vector3>>();
+
+        //go through each corner vector and group vectors on
+        //the same face of the specified axis direction
+        foreach (Vector3 v in corners)
+        {
+            //immediately start the list if its empty
+            if (vectorCollection.Count < 1)
+            {
+                List<Vector3> newList = new List<Vector3>();
+                newList.Add(v);
+                vectorCollection.Add(newList);
+            }
+            else
+            {
+                //go through each list to find where the correct coordinates match
+                foreach (List<Vector3> list in vectorCollection)
+                {
+
+                    if (list.Count < 1)
+                    {
+                        DisplayError("A list was detected to be empty, an error has occured with vectorCollection variable");
+                        return null;
+                    }
+
+                    if (VectorMatchedToList(list[0], v, axis))
+                    {
+                        //if matched, add the new vector and jump to next loop
+                        list.Add(v);
+                        goto foundmatch;
+                    }
+
+                }//vectorCollection loop
+
+                //only reached if vector was not matched to existing list
+
+                List<Vector3> newList = new List<Vector3>();
+                newList.Add(v);
+                vectorCollection.Add(newList);
+
+                //=======================================================
+
+            foundmatch:;
+
+            }
+
+        }//corners loop
+        
+        //sort in decending order (most positive facing side first)
+        vectorCollection.Sort(CustomCompareListFirstVector3XCoordinate);
+        
+        return positiveDirection ? vectorCollection[0] : vectorCollection[vectorCollection.Count - 1];
+    }
+
+    public static Vector3 FaceCenterAtGroundLevel(List<Vector3> faceCorners)
+    {
+        //sort vectors by Y coordinate, to determine which is the lowest point (may not always be 0)
+        faceCorners.Sort(CustomCompareVector3YCoordinate);
+
+        //identify and remove the vectors not in line with lowest point
+        List<Vector3> vectorsToRemove = new List<Vector3>();
+        foreach (Vector3 v in faceCorners)
+        {
+            if (v.y != faceCorners[0].y)
+                vectorsToRemove.Add(v);
+        }
+        foreach (Vector3 v in vectorsToRemove)
+            faceCorners.Remove(v);
+        
+        float lowerValue = 0.0f, upperValue = 0.0f;
+        if (faceCorners[0].x != faceCorners[1].x)
+        {
+            if (faceCorners[0].x < faceCorners[1].x)
+            {
+                lowerValue = faceCorners[0].x;
+                upperValue = faceCorners[1].x;
+            }
+            else
+            {
+                lowerValue = faceCorners[1].x;
+                upperValue = faceCorners[0].x;
+            }
+
+            float X = ((upperValue - lowerValue) / 2) + lowerValue;
+            float Y = faceCorners[0].y;
+            float Z = faceCorners[0].z;
+            return new Vector3(X, Y, Z);
+        }
+        else
+        {
+            if (faceCorners[0].z < faceCorners[1].z)
+            {
+                lowerValue = faceCorners[0].z;
+                upperValue = faceCorners[1].z;
+            }
+            else
+            {
+                lowerValue = faceCorners[1].z;
+                upperValue = faceCorners[0].z;
+            }
+
+            float X = faceCorners[0].x;
+            float Y = faceCorners[0].y;
+            float Z = ((upperValue - lowerValue) / 2) + lowerValue;
+            return new Vector3(X, Y, Z);
+        }
+    }
+
+
     private static bool VectorMatchesElementsInLine(Vector3 vector, LineVectorsReturn line, VectorLineCompareType type)
     {
         foreach (Vector3 v in line.Vectors)
@@ -446,6 +566,270 @@ public class GlobalMethods {
         return v1.x == v2.x && v1.y == v2.y && v1.z == v2.z;
     }
 
+    private static bool VectorMatchedToList(Vector3 listVector, Vector3 newVector, AxisDirection axis)
+    {
+        switch (axis)
+        {
+            case AxisDirection.X:
+                return listVector.x == newVector.x;
+            case AxisDirection.Y:
+                return listVector.y == newVector.y;
+            case AxisDirection.Z:
+                return listVector.z == newVector.z;
+            default:
+                return false;
+        }
+    }
+
+
+    //sorts in decending order
+    private static int CustomCompareListFirstVector3XCoordinate(List<Vector3> l1, List<Vector3> l2)
+    {
+        if (l1[0].x < l2[0].x)
+            return 1;
+        else if (l1[0].x == l2[0].x)
+            return 0;
+        else
+            return -1;
+    }
+
+    //sorts in ascending order
+    private static int CustomCompareVector3YCoordinate(Vector3 v1, Vector3 v2)
+    {
+        if (v1.y < v2.y)
+            return -1;
+        else if (v1.y == v2.y)
+            return 0;
+        else
+            return 1;
+    }
+
+
+    private static float HalfOfObjectLengthInXAxis(string objectName)
+    {
+        switch (objectName)
+        {
+            case StringConstants.MedIndustrial:
+                return 4.73f;
+            case StringConstants.MedOffice:
+                return 6.54f;
+            case StringConstants.XSmallOffice:
+                return 8.25f;
+            case StringConstants.SmallOffice:
+                return 10.7f;
+            case StringConstants.MedOfficeTwo:
+                return 6.25f;
+            case StringConstants.MedApartment:
+                return 9.06f;
+            case StringConstants.LargeIndustrial:
+                return 32.11f;
+            case StringConstants.XLargeOffice://not currently being used
+                //break;
+            default:
+                return 0;
+        }
+    }
+
+    public static Vector3 VectorToMoveObjectInLocalAxis(string previousName, string newName)
+    {
+        const float largeIndustrialFixedZDistance = 27.52f;
+        float x = HalfOfObjectLengthInXAxis(previousName) + HalfOfObjectLengthInXAxis(newName);
+        float z = 0.0f;
+
+        switch (newName)
+        {
+            case StringConstants.MedIndustrial:
+                switch (previousName)
+                {
+                    case StringConstants.MedApartment:
+                        z = 0.54f;
+                        break;
+                    case StringConstants.MedOffice:
+                        z = 1.4f;
+                        break;
+                    case StringConstants.XSmallOffice:
+                        z = 0.36f;
+                        break;
+                    case StringConstants.SmallOffice:
+                        z = -2.2f;
+                        break;
+                    case StringConstants.MedOfficeTwo:
+                        z = 0.84f;
+                        break;
+                    case StringConstants.LargeIndustrial:
+                        x = 16.43f;
+                        z = largeIndustrialFixedZDistance + HalfOfObjectLengthInXAxis(newName);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case StringConstants.MedOffice:
+                switch (previousName)
+                {
+                    case StringConstants.MedApartment:
+                        z = -0.88f;
+                        break;
+                    case StringConstants.MedIndustrial:
+                        z = -1.4f;
+                        break;
+                    case StringConstants.XSmallOffice:
+                        z = -1.04f;
+                        break;
+                    case StringConstants.SmallOffice:
+                        z = -3.6f;
+                        break;
+                    case StringConstants.MedOfficeTwo:
+                        z = -0.55f;
+                        break;
+                    case StringConstants.LargeIndustrial:
+                        x = 17.83f;
+                        z = largeIndustrialFixedZDistance + HalfOfObjectLengthInXAxis(newName);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case StringConstants.XSmallOffice:
+                switch (previousName)
+                {
+                    case StringConstants.MedApartment:
+                        z = 0.21f;
+                        break;
+                    case StringConstants.MedIndustrial:
+                        z = -0.36f;
+                        break;
+                    case StringConstants.SmallOffice:
+                        z = -2.56f;
+                        break;
+                    case StringConstants.MedOfficeTwo:
+                        z = 0.48f;
+                        break;
+                    case StringConstants.MedOffice:
+                        z = 1.04f;
+                        break;
+                    case StringConstants.LargeIndustrial:
+                        x = 16.79f;
+                        z = largeIndustrialFixedZDistance + HalfOfObjectLengthInXAxis(newName);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case StringConstants.SmallOffice:
+                switch (previousName)
+                {
+                    case StringConstants.MedApartment:
+                        z = 2.67f;
+                        break;
+                    case StringConstants.MedIndustrial:
+                        z = 2.2f;
+                        break;
+                    case StringConstants.XSmallOffice:
+                        z = 2.56f;
+                        break;
+                    case StringConstants.MedOfficeTwo:
+                        z = 3.04f;
+                        break;
+                    case StringConstants.MedOffice:
+                        z = 3.6f;
+                        break;
+                    case StringConstants.LargeIndustrial:
+                        x = 14.22f;
+                        z = largeIndustrialFixedZDistance + HalfOfObjectLengthInXAxis(newName);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case StringConstants.MedOfficeTwo:
+                switch (previousName)
+                {
+                    case StringConstants.MedApartment:
+                        z = -0.35f;
+                        break;
+                    case StringConstants.MedIndustrial:
+                        z = -0.84f;
+                        break;
+                    case StringConstants.XSmallOffice:
+                        z = -0.48f;
+                        break;
+                    case StringConstants.SmallOffice:
+                        z = -3.04f;
+                        break;
+                    case StringConstants.MedOffice:
+                        z = 0.55f;
+                        break;
+                    case StringConstants.LargeIndustrial:
+                        x = 17.27f;
+                        z = largeIndustrialFixedZDistance + HalfOfObjectLengthInXAxis(newName);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case StringConstants.MedApartment:
+                switch (previousName)
+                {
+                    case StringConstants.MedIndustrial:
+                        z = -0.54f;
+                        break;
+                    case StringConstants.MedOffice:
+                        z = 0.88f;
+                        break;
+                    case StringConstants.XSmallOffice:
+                        z = -0.21f;
+                        break;
+                    case StringConstants.SmallOffice:
+                        z = -2.67f;
+                        break;
+                    case StringConstants.MedOfficeTwo:
+                        z = 0.35f;
+                        break;
+                    case StringConstants.LargeIndustrial:
+                        x = 16.99f;
+                        z = largeIndustrialFixedZDistance + HalfOfObjectLengthInXAxis(newName);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case StringConstants.LargeIndustrial:
+                switch (previousName)
+                {
+                    case StringConstants.MedIndustrial:
+                        z = 9.17f;
+                        break;
+                    case StringConstants.MedOffice:
+                        z = 10.63f;
+                        break;
+                    case StringConstants.XSmallOffice:
+                        z = 9.47f;
+                        break;
+                    case StringConstants.SmallOffice:
+                        z = 6.95f;
+                        break;
+                    case StringConstants.MedOfficeTwo:
+                        z = 10.08f;
+                        break;
+                    case StringConstants.MedApartment:
+                        z = 9.73f;
+                        break;
+                    case StringConstants.LargeIndustrial:
+                        x = 7.27f;
+                        z = largeIndustrialFixedZDistance + HalfOfObjectLengthInXAxis(newName);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            default:
+                break;
+        }
+
+        return new Vector3(x, 0.0f, z);
+    }
+
 
     public static void DisplayError(string msg)
     {
@@ -456,7 +840,6 @@ public class GlobalMethods {
     {
         get
         {
-            float mod = 14.2f / 3f;
             return new Vector3[] {
            /*A*/new Vector3(-67.3f, 14.2f, 0f), 
            /*B*/new Vector3(-53.1f, 14.2f, 0f), 
@@ -472,83 +855,6 @@ public class GlobalMethods {
            /*L*/new Vector3(-53.1f, 14.2f, 30.8f),
            /*M*/new Vector3(-67.3f, 0f, 30.8f), 
            /*N*/new Vector3(-53.1f, 0f, 30.8f),
-           /*A-B*/
-                new Vector3(-67.3f + mod, 14.2f, 0f),
-                new Vector3(-53.1f - mod, 14.2f, 0f),
-           /*A-D*/
-                new Vector3(-67.3f, 14.2f - mod, 0f),
-                new Vector3(-67.3f, mod, 0f),
-           /*B-E*/
-                new Vector3(-53.1f, 14.2f - mod, 0f),
-                new Vector3(-53.1f, mod, 0f),
-           /*D-E*/
-                new Vector3(-67.3f + mod, 0f, 0f),
-                new Vector3(-53.1f - mod, 0f, 0f),
-           /*K-L*/
-                new Vector3(-67.3f - mod, 14.2f, 30.8f),
-                new Vector3(-53.1f + mod, 14.2f, 30.8f),
-           /*K-M*/
-                new Vector3(-67.3f, 14.2f - mod, 30.8f),
-                new Vector3(-67.3f, mod, 30.8f),
-           /*L-N*/
-                new Vector3(-53.1f, 14.2f - mod, 30.8f),
-                new Vector3(-53.1f, mod, 30.8f),
-           /*M-N*/
-                new Vector3(-67.3f + mod, 0f, 30.8f),
-                new Vector3(-53.1f - mod, 0f, 30.8f),
-           /*B-G*/
-                new Vector3(-53.1f, 14.2f, mod),
-                new Vector3(-53.1f, 14.2f, 14.2f - mod),
-           /*G-I*/
-                new Vector3(-53.1f, 14.2f - mod, 14.2f),
-                new Vector3(-53.1f, mod, 14.2f),
-           /*E-I*/
-                new Vector3(-53.1f, 0f, mod),
-                new Vector3(-53.1f, 0f, 14.2f - mod),
-           /*C-H*/
-                new Vector3(-22.3f, 14.2f, mod),
-                new Vector3(-22.3f, 14.2f, 14.2f - mod),
-           /*C-F*/
-                new Vector3(-22.3f, 14.2f - mod, 0f),
-                new Vector3(-22.3f, mod, 0f),
-           /*H-J*/
-                new Vector3(-22.3f, 14.2f - mod, 14.2f),
-                new Vector3(-22.3f, mod, 14.2f),
-           /*F-J*/
-                new Vector3(-22.3f, 0f, mod),
-                new Vector3(-22.3f, 0f, 14.2f - mod),
-           /*A-K*/
-                new Vector3(-67.3f, 14.2f, 7.7f),
-                new Vector3(-67.3f, 14.2f, 15.4f),
-                new Vector3(-67.3f, 14.2f, 23.1f),
-           /*D-M*/
-                new Vector3(-67.3f, 0f, 7.7f),
-                new Vector3(-67.3f, 0f, 15.4f),
-                new Vector3(-67.3f, 0f, 23.1f),
-           /*B-L*/
-                new Vector3(-53.1f, 14.2f, 7.7f),
-                new Vector3(-53.1f, 14.2f, 15.4f),
-                new Vector3(-53.1f, 14.2f, 23.1f),
-           /*E-N*/
-                new Vector3(-53.1f, 0f, 7.7f),
-                new Vector3(-53.1f, 0f, 15.4f),
-                new Vector3(-53.1f, 0f, 23.1f),
-           /*B-C*/
-                new Vector3(-45.4f, 14.2f, 0f),
-                new Vector3(-37.7f, 14.2f, 0f),
-                new Vector3(-30f, 14.2f, 0f),
-           /*E-F*/
-                new Vector3(-45.4f, 0f, 0f),
-                new Vector3(-37.7f, 0f, 0f),
-                new Vector3(-30f, 0f, 0f),
-           /*G-H*/
-                new Vector3(-45.4f, 14.2f, 14.2f),
-                new Vector3(-37.7f, 14.2f, 14.2f),
-                new Vector3(-30f, 14.2f, 14.2f),
-           /*I-J*/
-                new Vector3(-45.4f, 0f, 14.2f),
-                new Vector3(-37.7f, 0f, 14.2f),
-                new Vector3(-30f, 0f, 14.2f),
             };
         }
     }
