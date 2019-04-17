@@ -39,7 +39,7 @@ public class WindowGenerateWorldByTerrainObject : ScriptableWizard
             {
                 //choose object (this is effectively a 'seed' for the generator)
                 Object obj = prefabs[Random.Range(0, prefabs.Length - 1)];
-                VectorBoolReturn startVector = GlobalMethods.GenerateStartingVector(new Vector3(), _terrainTarget.terrainData.size, _terrainTarget);
+                VectorBoolReturn startVector = GlobalMethods.StartingVector(new Vector3(), _terrainTarget.terrainData.size, _terrainTarget);
 
                 if (!startVector.OperationSuccess)
                 {

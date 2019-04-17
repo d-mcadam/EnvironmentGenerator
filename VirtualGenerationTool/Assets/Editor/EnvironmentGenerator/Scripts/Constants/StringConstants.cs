@@ -32,4 +32,16 @@ public class StringConstants {
     //error messages
     public const string Error_ContinousLoopError = "Continous Loop Error Occurred (this is a custom message)";
 
+
+    //Model prefab names
+    public const string LargeIndustrial = "LargeIndustrial"; //is an L shape building
+    public const string MedApartment = "MedApartment";
+    public const string MedIndustrial = "MedIndustrial";
+    public const string MedOffice = "MedOffice";
+    public const string MedOfficeTwo = "MedOffice2";
+    public const string SmallOffice = "SmallOffice";
+    public const string XLargeOffice = "XLargeOffice"; //is triangular and excessively large compared to other models (currently removed)
+    public const string XSmallOffice = "XSmallOffice";
+
+
 }
