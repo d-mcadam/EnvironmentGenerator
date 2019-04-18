@@ -107,15 +107,15 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
     private void ModelPrefabGenerationAlgorithm()
     {
 
+        //get all models
+        Object[] models = GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath);
+
         //full generation loop
         for (int currentTotal = 0; currentTotal < /*-1*/_maximumNumberOfObjects; currentTotal += 0)
         {
 
-            //get all models
-            Object[] models = GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath);
-
             //select a random model (generator 'seed')
-            Object model = models[Random.Range(0, models.Length)];
+            Object obj = models[Random.Range(0, models.Length)];
 
             //give it a starting position
             VectorBoolReturn startVector = GlobalMethods.StartingVector(new Vector3(), _terrainTarget.terrainData.size, _terrainTarget);
@@ -126,9 +126,15 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
             }
 
             //instantiate the 'seed' model and initiate the generator
-            GameObject newModel = (GameObject)PrefabUtility.InstantiatePrefab(model);
+            GameObject newModel = (GameObject)PrefabUtility.InstantiatePrefab(obj);
             newModel.transform.position = startVector.Vector;
             newModel.transform.rotation = Quaternion.Euler(new Vector3(0, Random.Range(0, 360), 0));
+
+            if (!CheckIntersectionForSeriesStart(newModel))
+            {
+                DestroyImmediate(newModel);
+                goto cancelledseries;
+            }
 
             //save a reference of the previously generated object
             GameObject previousModel = newModel;      //groupTotal starts at 1
@@ -138,21 +144,22 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
             {
                 //check if we have reached the maximum, exit full generation loop if so
                 if (groupTotal + currentTotal >= _maximumNumberOfObjects)
-                    goto outerloop;
+                    goto finishedgeneration;
 
                 //continue selecting models to generate in series
                 Object newObject = models[Random.Range(0, models.Length - 1)];
                 
                 //check if new model fits parameters
                 _loopFailCount = 0;
-                while (!ModelWithinParameters(previousModel, newObject))
+                while (!ModelWithinParameters(previousModel, (GameObject)newObject))
                 {
 
                     //exit method if loop limit reached, an error has occurred
                     if (++_loopFailCount >= _maxLoopFail)
                     {
                         GlobalMethods.DisplayError(StringConstants.Error_ContinousLoopError);
-                        return;
+                        currentTotal += groupTotal;
+                        goto cancelledseries;
                     }
 
                     //if it does NOT satisfy restrictions, choose new object
@@ -176,71 +183,93 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                 if (previousModel.name.Contains(StringConstants.LargeIndustrial))
                     newModel.transform.Rotate(0.0f, -90.0f, 0.0f);
 
-                //save a reference to the pevious model
-                previousModel = newModel;
+                if (!CheckIntersectionForNewObjectInSeries(previousModel, newModel))
+                    DestroyImmediate(newModel);
+                else
+                    previousModel = newModel;
 
             }//end of _maximumNumberInSeriesOrCluster loop - series generation loop
 
             currentTotal += _maximumNumberInSeriesOrCluster;
 
-        }//end of _maximumNumberOfObjects loop - full generation loop
+        cancelledseries:;
 
-    outerloop:;
+        }//end of  _maximumNumberOfObjects loop - full generation loop
 
-        return;
-        //TEST DATA
-        Vector3[] vs = GlobalMethods.TestData;
-
-        //get all the edges of the model
-        List<LineVectorsReturn> lineArrays = GlobalMethods.SortMeshVerticesToLineArrays(vs);
-
-        //get the corners of the model
-        List<Vector3> modelCorners = GlobalMethods.FindEdgeCorners(lineArrays);
-
-        List<Vector3> singleFaceVectors = GlobalMethods.FindModelFaceInAxisDirection(modelCorners, AxisDirection.X, true);
-
-        Vector3 faceCenterGroundLevelVector = GlobalMethods.FaceCenterAtGroundLevel(singleFaceVectors);
-
-        foreach (Object o in GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath))
-        {
-            Debug.Log(o.name);
-
-            GameObject model = (GameObject)o;
-
-            Vector3[] vectors = model.transform.GetChild(0).transform.GetComponent<MeshFilter>().sharedMesh.vertices;
-
-            Debug.Log("vertex array count: " + vectors.Length);
-
-            List<LineVectorsReturn> lines = GlobalMethods.SortMeshVerticesToLineArrays(vectors);
-
-            Debug.Log("Line count: " + lines.Count);
-
-            List<Vector3> corners = GlobalMethods.FindEdgeCorners(lines);
-
-            Debug.Log("Corner count: " + corners.Count);
-
-            List<Vector3> faceVectors = GlobalMethods.FindModelFaceInAxisDirection(corners, AxisDirection.X, true);
-
-            Debug.Log("face vector count: " + faceVectors.Count);
-
-            foreach(Vector3 v in faceVectors)
-            {
-                Debug.Log("Face vector: " + v);
-            }
-
-            Vector3 groundlevel = GlobalMethods.FaceCenterAtGroundLevel(faceVectors);
-            Debug.Log("Ground level vector: " + groundlevel);
-        }
+    finishedgeneration:;
         
     }
 
-    private bool ModelWithinParameters(GameObject previousObject, Object obj)
-    {
 
+    private bool CheckIntersectionForSeriesStart(GameObject newObj)
+    {
+        foreach (GameObject o in GetAllSceneModels())
+        {
+            if (o == newObj)
+                continue;
+
+            MeshRenderer objMesh = o.transform.GetChild(0).GetComponent<MeshRenderer>();
+            MeshRenderer newObjMesh = newObj.transform.GetChild(0).GetComponent<MeshRenderer>();
+
+            if (newObjMesh.bounds.Intersects(objMesh.bounds))
+            {
+                Debug.Log("YES - skipping");
+                return false;
+            }
+        }
 
         return true;
     }
+
+    private bool CheckIntersectionForNewObjectInSeries(GameObject previousObj, GameObject newObj)
+    {
+        foreach (GameObject o in GetAllSceneModels())
+        {
+            if (o == newObj || o == previousObj)
+                continue;
+            
+            MeshRenderer objMesh = o.transform.GetChild(0).GetComponent<MeshRenderer>();
+            MeshRenderer newObjMesh = newObj.transform.GetChild(0).GetComponent<MeshRenderer>();
+            
+            if (newObjMesh.bounds.Intersects(objMesh.bounds))
+            {
+                Debug.Log(newObj.name + " detected intersection with " + o.name);
+                Debug.Log("newObj position: " + newObj.transform.position);
+                Debug.Log("looped object position: " + o.transform.position);
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    private bool ModelWithinParameters(GameObject previousObject, GameObject newObj)
+    {
+        return true;
+    }
     
+
+    private List<GameObject> GetAllSceneModels()
+    {
+
+        List<GameObject> objectsInScene = new List<GameObject>();
+
+        foreach (GameObject o in Resources.FindObjectsOfTypeAll(typeof(GameObject)))
+        {
+            if (o.hideFlags == HideFlags.NotEditable || o.hideFlags == HideFlags.HideAndDontSave)
+                continue;
+
+            if (EditorUtility.IsPersistent(o.transform.root.gameObject))
+                continue;
+
+            if (o.layer == LayerMask.NameToLayer(StringConstants.BaseObjectTag))
+                objectsInScene.Add(o);
+        }
+
+        return objectsInScene;
+
+    }
+
 
     private Vector3 BasicPrefabNewRelativeObjectPosition(GameObject newObj, GameObject oldObj)
     {
