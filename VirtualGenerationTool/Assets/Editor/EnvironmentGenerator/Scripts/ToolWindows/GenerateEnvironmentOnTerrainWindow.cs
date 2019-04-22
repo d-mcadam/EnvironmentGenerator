@@ -17,7 +17,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
     private int _loopFailCount = 0;
     //1 million times, gives unacceptable 'lock-out' time (will need modifying)
-    private const int _maxLoopFail = 1000;
+    private const int _maxLoopFail = 10;
 
 
     void OnGUI()
@@ -96,6 +96,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
         Debug.Log(sum);
     }
+    
 
     private Vector3 NewModelRelativePosition(GameObject oldObj, GameObject newObj)
     {
@@ -103,6 +104,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         
         return movementVector;
     }
+
 
     private void ModelPrefabGenerationAlgorithm()
     {
@@ -151,43 +153,49 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                 
                 //check if new model fits parameters
                 _loopFailCount = 0;
-                while (!ModelWithinParameters(previousModel, (GameObject)newObject))
+                bool loopSuccess = false;
+                do
                 {
-
                     //exit method if loop limit reached, an error has occurred
-                    if (++_loopFailCount >= _maxLoopFail)
+                    if (++_loopFailCount > _maxLoopFail)
                     {
-                        GlobalMethods.DisplayError(StringConstants.Error_ContinousLoopError);
+                        Debug.Log("model loop parameter failure");
                         currentTotal += groupTotal;
                         goto cancelledseries;
                     }
 
-                    //if it does NOT satisfy restrictions, choose new object
+                    //select and instantiate model
                     newObject = models[Random.Range(0, models.Length - 1)];
+                    newModel = PrefabUtility.InstantiatePrefab(newObject) as GameObject;
 
-                }
+                    //initialise the position to match the previous model
+                    newModel.transform.position = previousModel.transform.position;
 
-                //instantiate the selected model to continue the series
-                newModel = (GameObject)PrefabUtility.InstantiatePrefab(newObject);
+                    //move the object to the new relative position
+                    newModel.transform.Translate(NewModelRelativePosition(previousModel, newModel), previousModel.transform);
 
-                //initialise the position to match the previous model
-                newModel.transform.position = previousModel.transform.position;
+                    //rotate the object to account for its new position
+                    newModel.transform.rotation = previousModel.transform.rotation;
+                    
+                    //======possibly move to the NewModelRelativePosition method============
+                    //adjust rotation if the previous object was a Large Industrial building 
+                    if (previousModel.name.Contains(StringConstants.LargeIndustrial))
+                        newModel.transform.Rotate(0.0f, -90.0f, 0.0f);
+                    //======================================================================
 
-                //move the object to the new relative position
-                newModel.transform.Translate(NewModelRelativePosition(previousModel, newModel), previousModel.transform);
+                    //check whether parameters matched
+                    if (ModelWithinParameters(previousModel, newModel))
+                    {
+                        loopSuccess = true;
+                        previousModel = newModel;
+                    }
+                    else
+                    {
+                        DestroyImmediate(newModel);
+                    }
 
-                //rotate the object to account for its new position
-                newModel.transform.rotation = previousModel.transform.rotation;
-
-                //adjust rotation if the previous object was a Large Industrial building 
-                if (previousModel.name.Contains(StringConstants.LargeIndustrial))
-                    newModel.transform.Rotate(0.0f, -90.0f, 0.0f);
-
-                if (!CheckIntersectionForNewObjectInSeries(previousModel, newModel))
-                    DestroyImmediate(newModel);
-                else
-                    previousModel = newModel;
-
+                } while (!loopSuccess);
+                
             }//end of _maximumNumberInSeriesOrCluster loop - series generation loop
 
             currentTotal += _maximumNumberInSeriesOrCluster;
@@ -213,7 +221,6 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
             if (newObjMesh.bounds.Intersects(objMesh.bounds))
             {
-                Debug.Log("YES - skipping");
                 return false;
             }
         }
@@ -221,31 +228,47 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         return true;
     }
 
-    private bool CheckIntersectionForNewObjectInSeries(GameObject previousObj, GameObject newObj)
+    private bool CheckIntersectionForNewObjectInSeries(GameObject prevObj, GameObject newObj)
     {
         foreach (GameObject o in GetAllSceneModels())
         {
-            if (o == newObj || o == previousObj)
+            if (o == newObj || o == prevObj)
                 continue;
             
             MeshRenderer objMesh = o.transform.GetChild(0).GetComponent<MeshRenderer>();
             MeshRenderer newObjMesh = newObj.transform.GetChild(0).GetComponent<MeshRenderer>();
-            
+
             if (newObjMesh.bounds.Intersects(objMesh.bounds))
-            {
-                Debug.Log(newObj.name + " detected intersection with " + o.name);
-                Debug.Log("newObj position: " + newObj.transform.position);
-                Debug.Log("looped object position: " + o.transform.position);
                 return false;
-            }
+            
         }
         
         return true;
     }
 
-    private bool ModelWithinParameters(GameObject previousObject, GameObject newObj)
+    private bool ModelWithinParameters(GameObject previousObject, GameObject newObject)
     {
-        return true;
+        //get the models mesh (always getchild at 0) and then its vertices
+        Vector3[] vertices = newObject.transform.GetChild(0).transform.GetComponent<MeshFilter>().sharedMesh.vertices;
+
+        //check object is within the X and Z bounds of the terrain object
+        foreach (Vector3 vertex in vertices)
+            if (!VertexWithinTerrainBounds(newObject.transform.TransformPoint(vertex)))
+                return false;
+
+        //if nothing else failed, return true
+        return CheckIntersectionForNewObjectInSeries(previousObject, newObject);
+    }
+
+    private bool VertexWithinTerrainBounds(Vector3 vertex)
+    {
+        //the Vertex X and Z coordinates need to be within the bounds of the terrain
+        //
+        //ie. greater than the starting X and Z position of the terrain but less than
+        //the starting point plus the dimension along its respective axis
+        //
+        return vertex.x > _terrainTarget.transform.position.x && vertex.x < _terrainTarget.transform.position.x + _terrainTarget.terrainData.size.x &&
+            vertex.z > _terrainTarget.transform.position.z && vertex.z < _terrainTarget.transform.position.z + _terrainTarget.terrainData.size.z;
     }
     
 
