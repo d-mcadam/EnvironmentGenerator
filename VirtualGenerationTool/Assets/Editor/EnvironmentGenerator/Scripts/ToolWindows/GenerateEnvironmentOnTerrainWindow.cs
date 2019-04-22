@@ -98,11 +98,17 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
     }
     
 
-    private Vector3 NewModelRelativePosition(GameObject oldObj, GameObject newObj)
+    private Vector3 NewModelRelativePosition(GameObject previousModel, GameObject newModel)
     {
-        Vector3 movementVector = GlobalMethods.VectorToMoveObjectInLocalAxis(oldObj.name, newObj.name);
+        //rotate the object to account for its new position
+        newModel.transform.rotation = previousModel.transform.rotation;
         
-        return movementVector;
+        //adjust rotation if the previous object was a Large Industrial building 
+        if (previousModel.name.Contains(StringConstants.LargeIndustrial))
+            newModel.transform.Rotate(0.0f, -90.0f, 0.0f);
+
+        //return the movement vector for the Translate function
+        return GlobalMethods.VectorToMoveObjectInLocalAxis(previousModel.name, newModel.name);
     }
 
 
@@ -132,7 +138,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
             newModel.transform.position = startVector.Vector;
             newModel.transform.rotation = Quaternion.Euler(new Vector3(0, Random.Range(0, 360), 0));
 
-            if (!CheckIntersectionForSeriesStart(newModel))
+            if (!InitialCheckIntersectionForSeriesStart(newModel) && ModelWithinParameters(newModel))
             {
                 DestroyImmediate(newModel);
                 goto cancelledseries;
@@ -174,15 +180,6 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                     //move the object to the new relative position
                     newModel.transform.Translate(NewModelRelativePosition(previousModel, newModel), previousModel.transform);
 
-                    //rotate the object to account for its new position
-                    newModel.transform.rotation = previousModel.transform.rotation;
-                    
-                    //======possibly move to the NewModelRelativePosition method============
-                    //adjust rotation if the previous object was a Large Industrial building 
-                    if (previousModel.name.Contains(StringConstants.LargeIndustrial))
-                        newModel.transform.Rotate(0.0f, -90.0f, 0.0f);
-                    //======================================================================
-
                     //check whether parameters matched
                     if (ModelWithinParameters(previousModel, newModel))
                     {
@@ -209,7 +206,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
     }
 
 
-    private bool CheckIntersectionForSeriesStart(GameObject newObj)
+    private bool InitialCheckIntersectionForSeriesStart(GameObject newObj)
     {
         foreach (GameObject o in GetAllSceneModels())
         {
@@ -224,6 +221,19 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                 return false;
             }
         }
+
+        return true;
+    }
+
+    private bool ModelWithinParameters(GameObject newObject)
+    {
+        //get the models mesh (always getchild at 0) and then its vertices
+        Vector3[] vertices = newObject.transform.GetChild(0).transform.GetComponent<MeshFilter>().sharedMesh.vertices;
+
+        //check object is within the X and Z bounds of the terrain object
+        foreach (Vector3 vertex in vertices)
+            if (!VertexWithinTerrainBounds(newObject.transform.TransformPoint(vertex)))
+                return false;
 
         return true;
     }
@@ -248,16 +258,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
     private bool ModelWithinParameters(GameObject previousObject, GameObject newObject)
     {
-        //get the models mesh (always getchild at 0) and then its vertices
-        Vector3[] vertices = newObject.transform.GetChild(0).transform.GetComponent<MeshFilter>().sharedMesh.vertices;
-
-        //check object is within the X and Z bounds of the terrain object
-        foreach (Vector3 vertex in vertices)
-            if (!VertexWithinTerrainBounds(newObject.transform.TransformPoint(vertex)))
-                return false;
-
-        //if nothing else failed, return true
-        return CheckIntersectionForNewObjectInSeries(previousObject, newObject);
+        return ModelWithinParameters(newObject) && CheckIntersectionForNewObjectInSeries(previousObject, newObject);
     }
 
     private bool VertexWithinTerrainBounds(Vector3 vertex)
