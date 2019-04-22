@@ -46,7 +46,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                 _generatorTheme == GenerateWorldTheme.CityStreets ? "Series" : "Cluster"),
                 _maximumNumberInSeriesOrCluster);
 
-
+        _maximumNumberOfGroups = EditorGUILayout.IntField("Maximum groups", _maximumNumberOfGroups);
 
         EditorGUI.indentLevel--;
 
@@ -114,14 +114,14 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
     private void ModelPrefabGenerationAlgorithm()
     {
-
         //get all models
         Object[] models = GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath);
+
+        int groupCount = 0;
 
         //full generation loop
         for (int currentTotal = 0; currentTotal < /*-1*/_maximumNumberOfObjects; currentTotal += 0)
         {
-
             //select a random model (generator 'seed')
             Object obj = models[Random.Range(0, models.Length)];
 
@@ -148,10 +148,10 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
             GameObject previousModel = newModel;      //groupTotal starts at 1
 
             //series generation loop
-            for (int groupTotal = 1; groupTotal < _maximumNumberInSeriesOrCluster; groupTotal++)
+            for (int seriesQuantity = 1; seriesQuantity < _maximumNumberInSeriesOrCluster; seriesQuantity++)
             {
                 //check if we have reached the maximum, exit full generation loop if so
-                if (groupTotal + currentTotal >= _maximumNumberOfObjects)
+                if (seriesQuantity + currentTotal >= _maximumNumberOfObjects)
                     goto finishedgeneration;
 
                 //continue selecting models to generate in series
@@ -166,7 +166,8 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                     if (++_loopFailCount > _maxLoopFail)
                     {
                         Debug.Log("model loop parameter failure");
-                        currentTotal += groupTotal;
+                        currentTotal += seriesQuantity;
+                        groupCount++;
                         goto cancelledseries;
                     }
 
@@ -196,8 +197,12 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
             }//end of _maximumNumberInSeriesOrCluster loop - series generation loop
 
             currentTotal += _maximumNumberInSeriesOrCluster;
+            groupCount++;
 
         cancelledseries:;
+
+            if (groupCount >= _maximumNumberOfGroups)
+                goto finishedgeneration;
 
         }//end of  _maximumNumberOfObjects loop - full generation loop
 
