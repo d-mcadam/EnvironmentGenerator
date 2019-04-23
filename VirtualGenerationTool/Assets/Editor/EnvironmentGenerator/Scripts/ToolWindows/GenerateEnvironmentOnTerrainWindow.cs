@@ -5,7 +5,6 @@ using UnityEditor;
 
 public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 {
-
     private Terrain _terrainTarget;
 
     //possibly make this an editable list
@@ -19,30 +18,65 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
     //1 million times, gives unacceptable 'lock-out' time (will need modifying)
     private const int _maxLoopFail = 10;
 
+    private bool _showLandRestrictionTools = false;
+    private bool _landRestrictionDrawingEnabled = false;
+    public Vector2[] _restrictedAreas;
 
-    void OnGUI()
+    private void CreateSpace(int space)
+    {
+        for (int i = 0; i < space; i++)
+            EditorGUILayout.Space();
+    }
+    public void OnGUI()
     {
         //title
         GUILayout.Label("Virtual Environment Generator Tool ©", EditorStyles.centeredGreyMiniLabel);
 
+        CreateTerrainField();
+        CreateDropdownFields();
+        CreateMaximumValueFields();
+
+        CreateSpace(2);
+
+        CreateLandRestrictionFields();
+
+        CreateSpace(4);
+
+        CreateGeneratorButtons();
+    }
+    private void CreateTerrainField()
+    {
+
         //terrain object
-        GUILayout.Label("Terrain object to target", EditorStyles.boldLabel);        EditorGUI.indentLevel++;
+        GUILayout.Label("Terrain object to target", EditorStyles.boldLabel);
+        EditorGUI.indentLevel++;
         _terrainTarget = (Terrain)EditorGUILayout.ObjectField("Terrain Object:", _terrainTarget, typeof(Terrain), true);
         EditorGUI.indentLevel--;
 
+    }
+    private void CreateDropdownFields()
+    {
+
         //generation type
-        GUILayout.Label("Generation Type", EditorStyles.boldLabel);        EditorGUI.indentLevel++;
+        GUILayout.Label("Generation Type", EditorStyles.boldLabel);
+        EditorGUI.indentLevel++;
         _generatorTheme = (GenerateWorldTheme)EditorGUILayout.EnumPopup("Select Type:", _generatorTheme);
         EditorGUI.indentLevel--;
 
+    }
+    private void CreateMaximumValueFields()
+    {
+
         //limited generator values
-        GUILayout.Label("Maximum Generation Values", EditorStyles.boldLabel);        EditorGUI.indentLevel++;
+        GUILayout.Label("Maximum Generation Values", EditorStyles.boldLabel);
+
+        EditorGUI.indentLevel++;
 
         _maximumNumberOfObjects = EditorGUILayout.IntField("Maximum Total", _maximumNumberOfObjects);
 
-        _maximumNumberInSeriesOrCluster = 
-            EditorGUILayout.IntField("Total in " + 
-                (_generatorTheme == GenerateWorldTheme.ModernCitiesWithStreets || 
+        _maximumNumberInSeriesOrCluster =
+            EditorGUILayout.IntField("Total in " +
+                (_generatorTheme == GenerateWorldTheme.ModernCitiesWithStreets ||
                 _generatorTheme == GenerateWorldTheme.CityStreets ? "Series" : "Cluster"),
                 _maximumNumberInSeriesOrCluster);
 
@@ -50,21 +84,101 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
         EditorGUI.indentLevel--;
 
-        //buttons
-        EditorGUILayout.Space();
+    }
+    private void CreateLandRestrictionFields()
+    {
+
+        //display foldable section
+        _showLandRestrictionTools = EditorGUILayout.Foldout(_showLandRestrictionTools, "Land-restriction drawing tools", true);
+        if (_showLandRestrictionTools)
+        {
+            EditorGUI.indentLevel++;
+            
+            if (GUILayout.Button("Ping camera data"))
+            {
+
+                Camera[] cams = SceneView.GetAllSceneCameras();
+                Camera sceneCamera = new Camera();
+                foreach (Camera c in cams)
+                {
+                    if (c.name == StringConstants.SceneCameraName)
+                    {
+                        sceneCamera = c;
+                        break;
+                    }
+                }
+
+                if (sceneCamera == null)
+                    return;
+                
+                Debug.Log(sceneCamera.name);
+
+                Debug.Log("sceneCamera.transform.position : " + sceneCamera.transform.position);//actual camera position?
+                //Debug.Log("view.camera.transform.rotation : " + view.camera.transform.rotation);//same as view.rotation
+
+                //Debug.Log("view.position : " + view.position);//view port/window?
+                //Debug.Log("view.pivot : " + view.pivot);//degrees? really dont know what this is
+                //Debug.Log("view.rotation : " + view.rotation);//radians?
+                
+            }
+            
+            if (GUILayout.Button((_landRestrictionDrawingEnabled ? "Disable" : "Enable") + " land-restriction drawing tools"))
+            {
+                _landRestrictionDrawingEnabled = !_landRestrictionDrawingEnabled;
+
+                if (_landRestrictionDrawingEnabled)
+                {
+
+                    SceneView view = SceneView.lastActiveSceneView;
+
+                    view.LookAt(_terrainTarget.transform.position, Quaternion.Euler(90.0f, 0.0f, 0.0f));
+
+                    EditorGUIUtility.PingObject(_terrainTarget);
+                    Selection.activeGameObject = _terrainTarget.gameObject;
+                    view.FrameSelected();
+
+                }
+            }
+
+            GUILayout.Label("(Consider the Y coordinate to be the Z coordinate)", EditorStyles.boldLabel);
+
+            //EditorGUI.indentLevel++;
+
+            ScriptableObject target = this;
+            SerializedObject so = new SerializedObject(target);
+            SerializedProperty vectorProperty = so.FindProperty("_restrictedAreas");
+            if (vectorProperty != null)
+            {
+                EditorGUILayout.PropertyField(vectorProperty, true);
+                so.ApplyModifiedProperties();
+            }
+        }
+        else
+        {
+            _landRestrictionDrawingEnabled = false;
+        }
+        //end of foldable section
+
+    }
+    private void CreateGeneratorButtons()
+    {
+
+        //generator buttons
         EditorGUI.BeginDisabledGroup(!_terrainTarget);
         if (GUILayout.Button(StringConstants.GenerateEnvironment_ButtonText))
         {
             //BasicPrefabGenerationAlgorithm();
             //CalculateModelFaceArea();
         }
-        EditorGUILayout.Space();
+        CreateSpace(1);
         if (GUILayout.Button("Generate using models"))
         {
             ModelPrefabGenerationAlgorithm();
         }
         EditorGUI.EndDisabledGroup();
+
     }
+    
 
     private void CalculateModelFaceArea(int[,] points)
     {

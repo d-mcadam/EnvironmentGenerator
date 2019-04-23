@@ -36,6 +36,8 @@ public class StringConstants {
     //error messages
     public const string Error_ContinousLoopError = "Continous Loop Error Occurred (this is a custom message)";
 
+    //existing object name
+    public const string SceneCameraName = "SceneCamera";
 
     //Model prefab names
     public const string LargeIndustrial = "LargeIndustrial"; //is an L shape building
