@@ -20,7 +20,9 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
     private bool _showLandRestrictionTools = false;
     private bool _landRestrictionDrawingEnabled = false;
-    public Vector2[] _restrictedAreas;
+    public Rect[] _restrictedAreas;
+    private List<GameObject> _restrictedAreaVisualObjects = new List<GameObject>();
+    
 
     private void CreateSpace(int space)
     {
@@ -36,10 +38,10 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         CreateDropdownFields();
         CreateMaximumValueFields();
 
-        CreateSpace(2);
-
+        CreateSpace(5);
+        
         CreateLandRestrictionFields();
-
+        
         CreateSpace(4);
 
         CreateGeneratorButtons();
@@ -93,35 +95,9 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         if (_showLandRestrictionTools)
         {
             EditorGUI.indentLevel++;
-            
-            if (GUILayout.Button("Ping camera data"))
-            {
 
-                Camera[] cams = SceneView.GetAllSceneCameras();
-                Camera sceneCamera = new Camera();
-                foreach (Camera c in cams)
-                {
-                    if (c.name == StringConstants.SceneCameraName)
-                    {
-                        sceneCamera = c;
-                        break;
-                    }
-                }
+            EditorGUI.BeginDisabledGroup(!_terrainTarget);
 
-                if (sceneCamera == null)
-                    return;
-                
-                Debug.Log(sceneCamera.name);
-
-                Debug.Log("sceneCamera.transform.position : " + sceneCamera.transform.position);//actual camera position?
-                //Debug.Log("view.camera.transform.rotation : " + view.camera.transform.rotation);//same as view.rotation
-
-                //Debug.Log("view.position : " + view.position);//view port/window?
-                //Debug.Log("view.pivot : " + view.pivot);//degrees? really dont know what this is
-                //Debug.Log("view.rotation : " + view.rotation);//radians?
-                
-            }
-            
             if (GUILayout.Button((_landRestrictionDrawingEnabled ? "Disable" : "Enable") + " land-restriction drawing tools"))
             {
                 _landRestrictionDrawingEnabled = !_landRestrictionDrawingEnabled;
@@ -132,33 +108,60 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                     SceneView view = SceneView.lastActiveSceneView;
 
                     view.LookAt(_terrainTarget.transform.position, Quaternion.Euler(90.0f, 0.0f, 0.0f));
-
-                    EditorGUIUtility.PingObject(_terrainTarget);
+                    
                     Selection.activeGameObject = _terrainTarget.gameObject;
                     view.FrameSelected();
 
+                    CheckAndDisplayLandRestrictionObjects();
+
+                }
+                else
+                {
+                    DestroyAllLandRestrictionObjects();
                 }
             }
 
             GUILayout.Label("(Consider the Y coordinate to be the Z coordinate)", EditorStyles.boldLabel);
+            GUILayout.Label("(Consider the Height value to be the Length value)", EditorStyles.boldLabel);
 
-            //EditorGUI.indentLevel++;
+            EditorGUI.BeginDisabledGroup(!_landRestrictionDrawingEnabled);
+
+            if (GUILayout.Button("Update drawing area"))
+            {
+                CheckAndDisplayLandRestrictionObjects();
+            }
 
             ScriptableObject target = this;
             SerializedObject so = new SerializedObject(target);
             SerializedProperty vectorProperty = so.FindProperty("_restrictedAreas");
+
             if (vectorProperty != null)
             {
                 EditorGUILayout.PropertyField(vectorProperty, true);
                 so.ApplyModifiedProperties();
             }
+
+            EditorGUI.EndDisabledGroup();
+
+            EditorGUI.EndDisabledGroup();
+
+            EditorGUI.indentLevel--;
+
+            if (_landRestrictionDrawingEnabled && !_terrainTarget)
+                _landRestrictionDrawingEnabled = false;
+            
         }
         else
         {
+
             _landRestrictionDrawingEnabled = false;
+            //could this be called only once when section folds?
+            if (_restrictedAreas.Length > 0)
+                DestroyAllLandRestrictionObjects();
+
         }
         //end of foldable section
-
+        
     }
     private void CreateGeneratorButtons()
     {
@@ -178,7 +181,43 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         EditorGUI.EndDisabledGroup();
 
     }
-    
+
+
+    private void CheckAndDisplayLandRestrictionObjects()
+    {
+
+        if (_restrictedAreaVisualObjects.Count > 0)
+            DestroyAllLandRestrictionObjects();
+
+        foreach (Rect area in _restrictedAreas)
+        {
+
+            GameObject parent = new GameObject(StringConstants.RestrictedAreas);
+            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cube.transform.parent = parent.transform;
+            cube.transform.localPosition += new Vector3(0.5f, 0.0f, 0.5f);
+            _restrictedAreaVisualObjects.Add(parent);
+            
+            //change the colour so its easy to see
+            cube.GetComponent<Renderer>().sharedMaterial.color = new Color(1f, 0f, 0f);
+
+            //adjust the position relative to specified dimensions and targeted terrain object
+            parent.transform.position = _terrainTarget.transform.position + 
+                new Vector3(area.x, 0.0f, area.y);
+
+            //adjust the scale accordingly
+            parent.transform.localScale = new Vector3(area.width, 1.0f, area.height);
+
+        }
+
+    }
+    private void DestroyAllLandRestrictionObjects()
+    {
+
+        foreach (GameObject obj in _restrictedAreaVisualObjects)
+            DestroyImmediate(obj);
+        
+    }
 
     private void CalculateModelFaceArea(int[,] points)
     {
