@@ -24,11 +24,6 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
     private List<GameObject> _restrictedAreaVisualObjects = new List<GameObject>();
     
 
-    private void CreateSpace(int space)
-    {
-        for (int i = 0; i < space; i++)
-            EditorGUILayout.Space();
-    }
     public void OnGUI()
     {
         //title
@@ -45,6 +40,11 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         CreateSpace(4);
 
         CreateGeneratorButtons();
+    }
+    private void CreateSpace(int space)
+    {
+        for (int i = 0; i < space; i++)
+            EditorGUILayout.Space();
     }
     private void CreateTerrainField()
     {
@@ -168,6 +168,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
         //generator buttons
         EditorGUI.BeginDisabledGroup(!_terrainTarget);
+        EditorGUI.BeginDisabledGroup(_landRestrictionDrawingEnabled);//unknown reason, would not work with && in duplicate line above
         if (GUILayout.Button(StringConstants.GenerateEnvironment_ButtonText))
         {
             //BasicPrefabGenerationAlgorithm();
@@ -178,6 +179,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         {
             ModelPrefabGenerationAlgorithm();
         }
+        EditorGUI.EndDisabledGroup();
         EditorGUI.EndDisabledGroup();
 
     }
@@ -271,7 +273,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         Object[] models = GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath);
 
         int groupCount = 0;
-
+        
         //full generation loop
         for (int currentTotal = 0; currentTotal < /*-1*/_maximumNumberOfObjects; currentTotal += 0)
         {
@@ -291,7 +293,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
             newModel.transform.position = startVector.Vector;
             newModel.transform.rotation = Quaternion.Euler(new Vector3(0, Random.Range(0, 360), 0));
 
-            if (!InitialCheckIntersectionForSeriesStart(newModel) && ModelWithinParameters(newModel))
+            if (!InitialCheckIntersectionForSeriesStart(newModel) || !ModelWithinParameters(newModel))
             {
                 DestroyImmediate(newModel);
                 goto cancelledseries;
@@ -333,7 +335,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
                     //move the object to the new relative position
                     newModel.transform.Translate(NewModelRelativePosition(previousModel, newModel), previousModel.transform);
-
+                    
                     //check whether parameters matched
                     if (ModelWithinParameters(previousModel, newModel))
                     {
@@ -353,7 +355,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
             groupCount++;
 
         cancelledseries:;
-
+            
             if (groupCount >= _maximumNumberOfGroups)
                 goto finishedgeneration;
 
@@ -383,19 +385,6 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         return true;
     }
 
-    private bool ModelWithinParameters(GameObject newObject)
-    {
-        //get the models mesh (always getchild at 0) and then its vertices
-        Vector3[] vertices = newObject.transform.GetChild(0).transform.GetComponent<MeshFilter>().sharedMesh.vertices;
-
-        //check object is within the X and Z bounds of the terrain object
-        foreach (Vector3 vertex in vertices)
-            if (!VertexWithinTerrainBounds(newObject.transform.TransformPoint(vertex)))
-                return false;
-
-        return true;
-    }
-
     private bool CheckIntersectionForNewObjectInSeries(GameObject prevObj, GameObject newObj)
     {
         foreach (GameObject o in GetAllSceneModels())
@@ -409,6 +398,23 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
             if (newObjMesh.bounds.Intersects(objMesh.bounds))
                 return false;
             
+        }
+        
+        return true;
+    }
+
+    private bool ModelWithinParameters(GameObject newObject)
+    {
+        //get the models mesh (always getchild at 0) and then its vertices
+        Vector3[] vertices = newObject.transform.GetChild(0).transform.GetComponent<MeshFilter>().sharedMesh.vertices;
+        
+        //check object is within the X and Z bounds of the terrain object
+        foreach (Vector3 vertex in vertices)
+        {
+            if (!VertexWithinTerrainBounds(newObject.transform.TransformPoint(vertex)) || !VertexWithinRectBounds(newObject.transform.TransformPoint(vertex)))
+            {
+                return false;
+            }
         }
         
         return true;
@@ -428,6 +434,21 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         //
         return vertex.x > _terrainTarget.transform.position.x && vertex.x < _terrainTarget.transform.position.x + _terrainTarget.terrainData.size.x &&
             vertex.z > _terrainTarget.transform.position.z && vertex.z < _terrainTarget.transform.position.z + _terrainTarget.terrainData.size.z;
+    }
+
+    private bool VertexWithinRectBounds(Vector3 vertex)
+    {
+        foreach (Rect rect in _restrictedAreas)
+        {
+            if (vertex.x > _terrainTarget.transform.position.x + rect.x && vertex.x < _terrainTarget.transform.position.x + rect.x + rect.width &&
+                vertex.z > _terrainTarget.transform.position.z + rect.y && vertex.z < _terrainTarget.transform.position.z + rect.y + rect.height)
+            {
+                return true;
+            }
+            
+        }
+        
+        return false;
     }
     
 
