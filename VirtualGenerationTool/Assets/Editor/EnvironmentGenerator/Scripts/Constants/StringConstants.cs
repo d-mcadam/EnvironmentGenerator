@@ -39,6 +39,7 @@ public class StringConstants {
     //object names
     public const string SceneCameraName = "SceneCamera";
     public const string RestrictedAreas = "RestrictedAreas";
+    public const string DuplicateText = " (duplicate)";
 
     //Model prefab names
     public const string LargeIndustrial = "LargeIndustrial"; //is an L shape building

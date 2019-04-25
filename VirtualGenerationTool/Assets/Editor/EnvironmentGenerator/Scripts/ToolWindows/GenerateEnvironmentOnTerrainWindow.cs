@@ -300,11 +300,15 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
             }
 
             //save a reference of the previously generated object
-            GameObject previousModel = newModel;      //groupTotal starts at 1
+            GameObject previousModel = newModel;        //groupTotal starts at 1
+            GameObject previousDuplicate = null;
 
             //series generation loop
             for (int seriesQuantity = 1; seriesQuantity < _maximumNumberInSeriesOrCluster; seriesQuantity++)
             {
+                //used to check how many times large industrial building was generated
+                int uniqueConditionCount = 0;
+
                 //check if we have reached the maximum, exit full generation loop if so
                 if (seriesQuantity + currentTotal >= _maximumNumberOfObjects)
                     goto finishedgeneration;
@@ -340,7 +344,97 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                     if (ModelWithinParameters(previousModel, newModel))
                     {
                         loopSuccess = true;
+
+                        //general rule #1
+                        //if generated large industrial, skip opposing building this turn,
+                        //but be sure to adjust the next opposing model accordingly
+                        if (newModel.name != StringConstants.LargeIndustrial)
+                        {
+                            GameObject duplicate = DuplicateNewModel(newObject, newModel);
+
+                            //general rule #2
+                            //if the previous model was a large industrial building (so an opposing model wasnt generated last loop),
+                            //adjust this models position accordingly (must account for consecutive large industrial buildings 
+                            //and any previous duplicate size)
+
+                            if (previousModel.name == StringConstants.LargeIndustrial)
+                            {
+                                if (previousDuplicate == null)
+                                    goto generatenormally;
+
+                                //get all the model corners for the previous duplicate
+                                List<Vector3> modelCorners = GlobalMethods.FindEdgeCorners(GlobalMethods.SortMeshVerticesToLineArrays(previousDuplicate));
+
+                                //determine facing direction
+                                AxisDirection direction = AxisDirection.X;
+                                bool positiveDirection = false;
+                                if (uniqueConditionCount % 4 == 0)
+                                {
+
+                                    positiveDirection = false;
+                                    direction = AxisDirection.Z;
+
+                                }
+                                else if (uniqueConditionCount % 3 == 0)
+                                {
+
+                                    positiveDirection = false;
+                                    direction = AxisDirection.X;
+
+                                }
+                                else if (uniqueConditionCount % 2 == 0)
+                                {
+
+                                    positiveDirection = true;
+                                    direction = AxisDirection.Z;
+
+                                }
+                                else //assume: uniqueConditionCount % 1 == 0
+                                {
+
+                                    positiveDirection = true;
+                                    direction = AxisDirection.X;
+
+                                }
+
+                                List<Vector3> modelFace = GlobalMethods.FindModelFaceInAxisDirection(modelCorners, direction, positiveDirection);
+
+                                switch (direction)
+                                {
+                                    case AxisDirection.X:
+                                        duplicate.transform.position = 
+                                            new Vector3(
+                                                previousDuplicate.transform.TransformPoint(modelFace[0]).x, 
+                                                duplicate.transform.position.y, 
+                                                duplicate.transform.position.z);
+                                        break;
+                                    case AxisDirection.Z:
+                                        duplicate.transform.position = 
+                                            new Vector3(
+                                                duplicate.transform.position.x, 
+                                                duplicate.transform.position.y, 
+                                                previousDuplicate.transform.TransformPoint(modelFace[0]).z);
+                                        break;
+                                    default:
+                                        break;
+                                }
+
+                            }
+
+                        generatenormally:;
+
+                            previousDuplicate = duplicate;
+
+                            uniqueConditionCount = 0;
+
+                        }
+                        else
+                        {
+                            uniqueConditionCount++;
+                        }
+                        
                         previousModel = newModel;
+
                     }
                     else
                     {
@@ -363,6 +457,26 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
     finishedgeneration:;
         
+    }
+    private GameObject DuplicateNewModel(Object newObject, GameObject newModel)
+    {
+
+        //duplicate model
+        GameObject duplicate = (GameObject)PrefabUtility.InstantiatePrefab(newObject);
+
+        //intersecting duplicates is okay (for now), this will identify them
+        duplicate.name += StringConstants.DuplicateText;
+
+        //adjust position of model
+        duplicate.transform.position = newModel.transform.position;
+        duplicate.transform.rotation = newModel.transform.rotation;
+
+        //translate to opposing sides
+        duplicate.transform.Translate(new Vector3(0.0f, 0.0f, 25.0f));
+        duplicate.transform.Rotate(new Vector3(0.0f, 180.0f, 0.0f));
+
+        return duplicate;
+
     }
 
 
@@ -438,6 +552,9 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
     private bool VertexWithinRectBounds(Vector3 vertex)
     {
+        if (_restrictedAreas.Length < 1)
+            return true;
+
         foreach (Rect rect in _restrictedAreas)
         {
             if (vertex.x > _terrainTarget.transform.position.x + rect.x && vertex.x < _terrainTarget.transform.position.x + rect.x + rect.width &&
