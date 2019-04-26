@@ -5,7 +5,6 @@ using UnityEditor;
 
 public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 {
-
     private Terrain _terrainTarget;
 
     //possibly make this an editable list
@@ -17,53 +16,209 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
     private int _loopFailCount = 0;
     //1 million times, gives unacceptable 'lock-out' time (will need modifying)
-    private const int _maxLoopFail = 1000;
+    private const int _maxLoopFail = 10;
 
+    private bool _showLandRestrictionTools = false;
+    private bool _landRestrictionDrawingEnabled = false;
+    public Rect[] _restrictedAreas;
+    private List<GameObject> _restrictedAreaVisualObjects = new List<GameObject>();
+    
 
-    void OnGUI()
+    public void OnGUI()
     {
         //title
         GUILayout.Label("Virtual Environment Generator Tool ©", EditorStyles.centeredGreyMiniLabel);
 
+        CreateTerrainField();
+        CreateDropdownFields();
+        CreateMaximumValueFields();
+
+        CreateSpace(5);
+        
+        CreateLandRestrictionFields();
+        
+        CreateSpace(4);
+
+        CreateGeneratorButtons();
+    }
+    private void CreateSpace(int space)
+    {
+        for (int i = 0; i < space; i++)
+            EditorGUILayout.Space();
+    }
+    private void CreateTerrainField()
+    {
+
         //terrain object
-        GUILayout.Label("Terrain object to target", EditorStyles.boldLabel);        EditorGUI.indentLevel++;
+        GUILayout.Label("Terrain object to target", EditorStyles.boldLabel);
+        EditorGUI.indentLevel++;
         _terrainTarget = (Terrain)EditorGUILayout.ObjectField("Terrain Object:", _terrainTarget, typeof(Terrain), true);
         EditorGUI.indentLevel--;
 
+    }
+    private void CreateDropdownFields()
+    {
+
         //generation type
-        GUILayout.Label("Generation Type", EditorStyles.boldLabel);        EditorGUI.indentLevel++;
+        GUILayout.Label("Generation Type", EditorStyles.boldLabel);
+        EditorGUI.indentLevel++;
         _generatorTheme = (GenerateWorldTheme)EditorGUILayout.EnumPopup("Select Type:", _generatorTheme);
         EditorGUI.indentLevel--;
 
+    }
+    private void CreateMaximumValueFields()
+    {
+
         //limited generator values
-        GUILayout.Label("Maximum Generation Values", EditorStyles.boldLabel);        EditorGUI.indentLevel++;
+        GUILayout.Label("Maximum Generation Values", EditorStyles.boldLabel);
+
+        EditorGUI.indentLevel++;
 
         _maximumNumberOfObjects = EditorGUILayout.IntField("Maximum Total", _maximumNumberOfObjects);
 
-        _maximumNumberInSeriesOrCluster = 
-            EditorGUILayout.IntField("Total in " + 
-                (_generatorTheme == GenerateWorldTheme.ModernCitiesWithStreets || 
+        _maximumNumberInSeriesOrCluster =
+            EditorGUILayout.IntField("Total in " +
+                (_generatorTheme == GenerateWorldTheme.ModernCitiesWithStreets ||
                 _generatorTheme == GenerateWorldTheme.CityStreets ? "Series" : "Cluster"),
                 _maximumNumberInSeriesOrCluster);
 
-
+        _maximumNumberOfGroups = EditorGUILayout.IntField("Maximum groups", _maximumNumberOfGroups);
 
         EditorGUI.indentLevel--;
 
-        //buttons
-        EditorGUILayout.Space();
+    }
+    private void CreateLandRestrictionFields()
+    {
+
+        //display foldable section
+        _showLandRestrictionTools = EditorGUILayout.Foldout(_showLandRestrictionTools, "Land-restriction drawing tools", true);
+        if (_showLandRestrictionTools)
+        {
+            EditorGUI.indentLevel++;
+
+            EditorGUI.BeginDisabledGroup(!_terrainTarget);
+
+            if (GUILayout.Button((_landRestrictionDrawingEnabled ? "Disable" : "Enable") + " land-restriction drawing tools"))
+            {
+                _landRestrictionDrawingEnabled = !_landRestrictionDrawingEnabled;
+
+                if (_landRestrictionDrawingEnabled)
+                {
+
+                    SceneView view = SceneView.lastActiveSceneView;
+
+                    view.LookAt(_terrainTarget.transform.position, Quaternion.Euler(90.0f, 0.0f, 0.0f));
+                    
+                    Selection.activeGameObject = _terrainTarget.gameObject;
+                    view.FrameSelected();
+
+                    CheckAndDisplayLandRestrictionObjects();
+
+                }
+                else
+                {
+                    DestroyAllLandRestrictionObjects();
+                }
+            }
+
+            GUILayout.Label("(Consider the Y coordinate to be the Z coordinate)", EditorStyles.boldLabel);
+            GUILayout.Label("(Consider the Height value to be the Length value)", EditorStyles.boldLabel);
+
+            EditorGUI.BeginDisabledGroup(!_landRestrictionDrawingEnabled);
+
+            if (GUILayout.Button("Update drawing area"))
+            {
+                CheckAndDisplayLandRestrictionObjects();
+            }
+
+            ScriptableObject target = this;
+            SerializedObject so = new SerializedObject(target);
+            SerializedProperty vectorProperty = so.FindProperty("_restrictedAreas");
+
+            if (vectorProperty != null)
+            {
+                EditorGUILayout.PropertyField(vectorProperty, true);
+                so.ApplyModifiedProperties();
+            }
+
+            EditorGUI.EndDisabledGroup();
+
+            EditorGUI.EndDisabledGroup();
+
+            EditorGUI.indentLevel--;
+
+            if (_landRestrictionDrawingEnabled && !_terrainTarget)
+                _landRestrictionDrawingEnabled = false;
+            
+        }
+        else
+        {
+
+            _landRestrictionDrawingEnabled = false;
+            //could this be called only once when section folds?
+            if (_restrictedAreas.Length > 0)
+                DestroyAllLandRestrictionObjects();
+
+        }
+        //end of foldable section
+        
+    }
+    private void CreateGeneratorButtons()
+    {
+
+        //generator buttons
         EditorGUI.BeginDisabledGroup(!_terrainTarget);
+        EditorGUI.BeginDisabledGroup(_landRestrictionDrawingEnabled);//unknown reason, would not work with && in duplicate line above
         if (GUILayout.Button(StringConstants.GenerateEnvironment_ButtonText))
         {
             //BasicPrefabGenerationAlgorithm();
             //CalculateModelFaceArea();
         }
-        EditorGUILayout.Space();
+        CreateSpace(1);
         if (GUILayout.Button("Generate using models"))
         {
             ModelPrefabGenerationAlgorithm();
         }
         EditorGUI.EndDisabledGroup();
+        EditorGUI.EndDisabledGroup();
+
+    }
+
+
+    private void CheckAndDisplayLandRestrictionObjects()
+    {
+
+        if (_restrictedAreaVisualObjects.Count > 0)
+            DestroyAllLandRestrictionObjects();
+
+        foreach (Rect area in _restrictedAreas)
+        {
+
+            GameObject parent = new GameObject(StringConstants.RestrictedAreas);
+            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cube.transform.parent = parent.transform;
+            cube.transform.localPosition += new Vector3(0.5f, 0.0f, 0.5f);
+            _restrictedAreaVisualObjects.Add(parent);
+            
+            //change the colour so its easy to see
+            cube.GetComponent<Renderer>().sharedMaterial.color = new Color(1f, 0f, 0f);
+
+            //adjust the position relative to specified dimensions and targeted terrain object
+            parent.transform.position = _terrainTarget.transform.position + 
+                new Vector3(area.x, 0.0f, area.y);
+
+            //adjust the scale accordingly
+            parent.transform.localScale = new Vector3(area.width, 1.0f, area.height);
+
+        }
+
+    }
+    private void DestroyAllLandRestrictionObjects()
+    {
+
+        foreach (GameObject obj in _restrictedAreaVisualObjects)
+            DestroyImmediate(obj);
+        
     }
 
     private void CalculateModelFaceArea(int[,] points)
@@ -96,27 +251,35 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
         Debug.Log(sum);
     }
+    
 
-    private Vector3 NewModelRelativePosition(GameObject oldObj, GameObject newObj)
+    private Vector3 NewModelRelativePosition(GameObject previousModel, GameObject newModel)
     {
-        Vector3 movementVector = GlobalMethods.VectorToMoveObjectInLocalAxis(oldObj.name, newObj.name);
+        //rotate the object to account for its new position
+        newModel.transform.rotation = previousModel.transform.rotation;
         
-        return movementVector;
+        //adjust rotation if the previous object was a Large Industrial building 
+        if (previousModel.name.Contains(StringConstants.LargeIndustrial))
+            newModel.transform.Rotate(0.0f, -90.0f, 0.0f);
+
+        //return the movement vector for the Translate function
+        return GlobalMethods.VectorToMoveObjectInLocalAxis(previousModel.name, newModel.name);
     }
+
 
     private void ModelPrefabGenerationAlgorithm()
     {
+        //get all models
+        Object[] models = GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath);
 
+        int groupCount = 0;
+        
         //full generation loop
         for (int currentTotal = 0; currentTotal < /*-1*/_maximumNumberOfObjects; currentTotal += 0)
         {
-
-            //get all models
-            Object[] models = GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath);
-
             //select a random model (generator 'seed')
-            Object model = models[Random.Range(0, models.Length)];
-
+            Object obj = models[Random.Range(0, models.Length)];
+            
             //give it a starting position
             VectorBoolReturn startVector = GlobalMethods.StartingVector(new Vector3(), _terrainTarget.terrainData.size, _terrainTarget);
             if (!startVector.OperationSuccess)
@@ -126,121 +289,265 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
             }
 
             //instantiate the 'seed' model and initiate the generator
-            GameObject newModel = (GameObject)PrefabUtility.InstantiatePrefab(model);
+            GameObject newModel = PrefabUtility.InstantiatePrefab(obj) as GameObject;
             newModel.transform.position = startVector.Vector;
             newModel.transform.rotation = Quaternion.Euler(new Vector3(0, Random.Range(0, 360), 0));
 
+            if (!ModelWithinParameters(newModel))
+            {
+                DestroyImmediate(newModel);
+                goto cancelledseries;
+            }
+
+            if (newModel.name != StringConstants.LargeIndustrial)
+                DuplicateNewModel(obj, newModel);
+
             //save a reference of the previously generated object
-            GameObject previousModel = newModel;      //groupTotal starts at 1
+            //groupTotal starts at 1
+            GameObject previousModel = newModel;
+            //null so it isnt instantiated as an empty game object
+            GameObject previousDuplicate = null;
 
             //series generation loop
-            for (int groupTotal = 1; groupTotal < _maximumNumberInSeriesOrCluster; groupTotal++)
+            for (int seriesQuantity = 1; seriesQuantity < _maximumNumberInSeriesOrCluster; seriesQuantity++)
             {
                 //check if we have reached the maximum, exit full generation loop if so
-                if (groupTotal + currentTotal >= _maximumNumberOfObjects)
-                    goto outerloop;
+                if (seriesQuantity + currentTotal >= _maximumNumberOfObjects)
+                    goto finishedgeneration;
 
                 //continue selecting models to generate in series
                 Object newObject = models[Random.Range(0, models.Length - 1)];
-                
+
                 //check if new model fits parameters
                 _loopFailCount = 0;
-                while (!ModelWithinParameters(previousModel, newObject))
+                bool loopSuccess = false;
+                do
                 {
-
                     //exit method if loop limit reached, an error has occurred
-                    if (++_loopFailCount >= _maxLoopFail)
+                    if (++_loopFailCount > _maxLoopFail)
                     {
-                        GlobalMethods.DisplayError(StringConstants.Error_ContinousLoopError);
-                        return;
+                        Debug.Log("model loop parameter failure");
+                        currentTotal += seriesQuantity;
+                        groupCount++;
+                        goto cancelledseries;
                     }
 
-                    //if it does NOT satisfy restrictions, choose new object
+                    //select and instantiate model
                     newObject = models[Random.Range(0, models.Length - 1)];
+                    newModel = PrefabUtility.InstantiatePrefab(newObject) as GameObject;
 
-                }
+                    //initialise the position to match the previous model
+                    newModel.transform.position = previousModel.transform.position;
 
-                //instantiate the selected model to continue the series
-                newModel = (GameObject)PrefabUtility.InstantiatePrefab(newObject);
+                    //move the object to the new relative position
+                    newModel.transform.Translate(NewModelRelativePosition(previousModel, newModel), previousModel.transform);
+                    
+                    //check whether parameters matched
+                    if (ModelWithinParameters(previousModel, newModel))
+                    {
+                        loopSuccess = true;
+                        //save reference to this model
+                        previousModel = newModel;
 
-                //initialise the position to match the previous model
-                newModel.transform.position = previousModel.transform.position;
+                        //used to set previousDuplicate to null if required
+                        GameObject duplicate = null;
 
-                //move the object to the new relative position
-                newModel.transform.Translate(NewModelRelativePosition(previousModel, newModel), previousModel.transform);
+                        //check whether we can generate a duplicate
+                        if (newModel.name != StringConstants.LargeIndustrial)
+                        {
+                            //generate a duplicate
+                            duplicate = DuplicateNewModel(newObject, newModel);
+                            
+                            //check if the duplicate satisfies parameters
+                            if (previousDuplicate == null)
+                            {
+                                if (!ModelWithinParameters(duplicate))
+                                {
+                                    DestroyImmediate(duplicate);
+                                }
+                            }
+                            else
+                            {
+                                if (!ModelWithinParameters(previousDuplicate, duplicate))
+                                {
+                                    DestroyImmediate(duplicate);
+                                }
+                            }
 
-                //rotate the object to account for its new position
-                newModel.transform.rotation = previousModel.transform.rotation;
+                        }
 
-                //adjust rotation if the previous object was a Large Industrial building 
-                if (previousModel.name.Contains(StringConstants.LargeIndustrial))
-                    newModel.transform.Rotate(0.0f, -90.0f, 0.0f);
+                        previousDuplicate = duplicate;
 
-                //save a reference to the pevious model
-                previousModel = newModel;
+                        //currently doesnt work, left code as is to try in future
+                        //RelativeMoveDuplicate(); 
+                    }
+                    else
+                    {
+                        DestroyImmediate(newModel);
+                    }
 
+                } while (!loopSuccess);
+                
             }//end of _maximumNumberInSeriesOrCluster loop - series generation loop
 
             currentTotal += _maximumNumberInSeriesOrCluster;
+            groupCount++;
 
-        }//end of _maximumNumberOfObjects loop - full generation loop
+        cancelledseries:;
+            
+            if (groupCount >= _maximumNumberOfGroups)
+                goto finishedgeneration;
 
-    outerloop:;
+        }//end of  _maximumNumberOfObjects loop - full generation loop
 
-        return;
-        //TEST DATA
-        Vector3[] vs = GlobalMethods.TestData;
+    finishedgeneration:;
 
-        //get all the edges of the model
-        List<LineVectorsReturn> lineArrays = GlobalMethods.SortMeshVerticesToLineArrays(vs);
-
-        //get the corners of the model
-        List<Vector3> modelCorners = GlobalMethods.FindEdgeCorners(lineArrays);
-
-        List<Vector3> singleFaceVectors = GlobalMethods.FindModelFaceInAxisDirection(modelCorners, AxisDirection.X, true);
-
-        Vector3 faceCenterGroundLevelVector = GlobalMethods.FaceCenterAtGroundLevel(singleFaceVectors);
-
-        foreach (Object o in GlobalMethods.GetPrefabs(StringConstants.ModelPrefabFilePath))
+        //kill any invisible models
+        foreach (GameObject o in Resources.FindObjectsOfTypeAll(typeof(GameObject)))
         {
-            Debug.Log(o.name);
-
-            GameObject model = (GameObject)o;
-
-            Vector3[] vectors = model.transform.GetChild(0).transform.GetComponent<MeshFilter>().sharedMesh.vertices;
-
-            Debug.Log("vertex array count: " + vectors.Length);
-
-            List<LineVectorsReturn> lines = GlobalMethods.SortMeshVerticesToLineArrays(vectors);
-
-            Debug.Log("Line count: " + lines.Count);
-
-            List<Vector3> corners = GlobalMethods.FindEdgeCorners(lines);
-
-            Debug.Log("Corner count: " + corners.Count);
-
-            List<Vector3> faceVectors = GlobalMethods.FindModelFaceInAxisDirection(corners, AxisDirection.X, true);
-
-            Debug.Log("face vector count: " + faceVectors.Count);
-
-            foreach(Vector3 v in faceVectors)
+            if (o.hideFlags == HideFlags.HideInHierarchy)
             {
-                Debug.Log("Face vector: " + v);
+                Debug.Log("found '" + o.name + "'. Destroying...");
+                DestroyImmediate(o);
             }
-
-            Vector3 groundlevel = GlobalMethods.FaceCenterAtGroundLevel(faceVectors);
-            Debug.Log("Ground level vector: " + groundlevel);
         }
-        
-    }
 
-    private bool ModelWithinParameters(GameObject previousObject, Object obj)
+    }
+    private GameObject DuplicateNewModel(Object newObject, GameObject newModel)
     {
 
+        //duplicate model
+        GameObject duplicate = (GameObject)PrefabUtility.InstantiatePrefab(newObject);
+
+        //intersecting duplicates is okay (for now), this will identify them
+        duplicate.name += StringConstants.DuplicateText;
+
+        //adjust position of model
+        duplicate.transform.position = newModel.transform.position;
+        duplicate.transform.rotation = newModel.transform.rotation;
+
+        //translate to opposing sides
+        duplicate.transform.Translate(new Vector3(0.0f, 0.0f, 35.0f));//will need adjusting as testing goes on
+        duplicate.transform.Rotate(new Vector3(0.0f, 180.0f, 0.0f));
+        
+        return duplicate;
+
+    }
+
+    private bool InitialCheckIntersectionForSeriesStart(GameObject newObj)
+    {
+        foreach (GameObject sceneObj in GetAllSceneModels())
+        {
+            if (sceneObj == newObj)
+                continue;
+
+            MeshRenderer sceneObjMesh = sceneObj.transform.GetChild(0).GetComponent<MeshRenderer>();
+            MeshRenderer newObjMesh = newObj.transform.GetChild(0).GetComponent<MeshRenderer>();
+
+            if (newObjMesh.bounds.Intersects(sceneObjMesh.bounds))
+                return false;
+
+        }
 
         return true;
     }
+
+    private bool CheckIntersectionForNewObjectInSeries(GameObject prevObj, GameObject newObj)
+    {
+        foreach (GameObject sceneObj in GetAllSceneModels())
+        {
+            if (sceneObj == newObj || sceneObj == prevObj)
+                continue;
+            
+            MeshRenderer sceneObjMesh = sceneObj.transform.GetChild(0).GetComponent<MeshRenderer>();
+            MeshRenderer newObjMesh = newObj.transform.GetChild(0).GetComponent<MeshRenderer>();
+
+            if (newObjMesh.bounds.Intersects(sceneObjMesh.bounds))
+                return false;
+            
+        }
+        
+        return true;
+    }
     
+    private bool ModelWithinParameters(GameObject newObject)
+    {
+        return WithinParameters(newObject) && InitialCheckIntersectionForSeriesStart(newObject);
+    }
+
+    private bool ModelWithinParameters(GameObject previousObject, GameObject newObject)
+    {
+        return WithinParameters(newObject) && CheckIntersectionForNewObjectInSeries(previousObject, newObject);
+    }
+
+    private bool WithinParameters(GameObject newObject)
+    {
+        //get the models mesh (always getchild at 0) and then its vertices
+        Vector3[] vertices = newObject.transform.GetChild(0).transform.GetComponent<MeshFilter>().sharedMesh.vertices;
+
+        //check object is within the X and Z bounds of the terrain object
+        foreach (Vector3 vertex in vertices)
+        {
+            if (!VertexWithinTerrainBounds(newObject.transform.TransformPoint(vertex)) || !VertexWithinRectBounds(newObject.transform.TransformPoint(vertex)))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool VertexWithinTerrainBounds(Vector3 vertex)
+    {
+        //the Vertex X and Z coordinates need to be within the bounds of the terrain
+        //
+        //ie. greater than the starting X and Z position of the terrain but less than
+        //the starting point plus the dimension along its respective axis
+        //
+        return vertex.x > _terrainTarget.transform.position.x && vertex.x < _terrainTarget.transform.position.x + _terrainTarget.terrainData.size.x &&
+            vertex.z > _terrainTarget.transform.position.z && vertex.z < _terrainTarget.transform.position.z + _terrainTarget.terrainData.size.z;
+    }
+
+    private bool VertexWithinRectBounds(Vector3 vertex)
+    {
+        if (_restrictedAreas.Length < 1)
+            return true;
+
+        foreach (Rect rect in _restrictedAreas)
+        {
+            if (vertex.x > _terrainTarget.transform.position.x + rect.x && vertex.x < _terrainTarget.transform.position.x + rect.x + rect.width &&
+                vertex.z > _terrainTarget.transform.position.z + rect.y && vertex.z < _terrainTarget.transform.position.z + rect.y + rect.height)
+            {
+                return true;
+            }
+            
+        }
+        
+        return false;
+    }
+    
+
+    private List<GameObject> GetAllSceneModels()
+    {
+
+        List<GameObject> objectsInScene = new List<GameObject>();
+
+        foreach (GameObject o in Resources.FindObjectsOfTypeAll(typeof(GameObject)))
+        {
+            if (o.hideFlags == HideFlags.NotEditable || o.hideFlags == HideFlags.HideAndDontSave)
+                continue;
+
+            if (EditorUtility.IsPersistent(o.transform.root.gameObject))
+                continue;
+
+            if (o.layer == LayerMask.NameToLayer(StringConstants.BaseObjectTag))
+                objectsInScene.Add(o);
+        }
+
+        return objectsInScene;
+
+    }
+
 
     private Vector3 BasicPrefabNewRelativeObjectPosition(GameObject newObj, GameObject oldObj)
     {
@@ -406,5 +713,105 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
         return true;
     }
-    
+
+
+
+
+    private void RelativeMoveDuplicate()
+    {
+
+        //GameObject previousDuplicate = null;
+
+        ////used to check how many times large industrial building was generated
+        //int uniqueConditionCount = 0;
+
+        ////general rule #1
+        ////if generated large industrial, skip opposing building this turn,
+        ////but be sure to adjust the next opposing model accordingly
+        //if (newModel.name != StringConstants.LargeIndustrial)
+        //{
+        //    GameObject duplicate = DuplicateNewModel(newObject, newModel);
+
+        //    //general rule #2
+        //    //if the previous model was a large industrial building (so an opposing model wasnt generated last loop),
+        //    //adjust this models position accordingly (must account for consecutive large industrial buildings 
+        //    //and any previous duplicate size)
+
+        //    if (previousModel.name == StringConstants.LargeIndustrial)
+        //    {
+        //        if (previousDuplicate == null)
+        //            goto generatenormally;
+
+        //        //get all the model corners for the previous duplicate
+        //        List<Vector3> modelCorners = GlobalMethods.FindEdgeCorners(GlobalMethods.SortMeshVerticesToLineArrays(previousDuplicate));
+
+        //        //determine facing direction
+        //        AxisDirection direction = AxisDirection.X;
+        //        bool positiveDirection = false;
+        //        if (uniqueConditionCount % 4 == 0)
+        //        {
+
+        //            positiveDirection = false;
+        //            direction = AxisDirection.X;
+
+        //        }
+        //        else if (uniqueConditionCount % 3 == 0)
+        //        {
+
+        //            positiveDirection = false;
+        //            direction = AxisDirection.Z;
+
+        //        }
+        //        else if (uniqueConditionCount % 2 == 0)
+        //        {
+
+        //            positiveDirection = true;
+        //            direction = AxisDirection.X;
+
+        //        }
+        //        else //assume: uniqueConditionCount % 1 == 0
+        //        {
+
+        //            positiveDirection = true;
+        //            direction = AxisDirection.Z;
+
+        //        }
+
+        //        List<Vector3> modelFace = GlobalMethods.FindModelFaceInAxisDirection(modelCorners, direction, positiveDirection);
+
+        //        switch (direction)
+        //        {
+        //            case AxisDirection.X:
+        //                duplicate.transform.position =
+        //                    new Vector3(
+        //                        previousDuplicate.transform.TransformPoint(modelFace[0]).x,
+        //                        duplicate.transform.position.y,
+        //                        duplicate.transform.position.z);
+        //                break;
+        //            case AxisDirection.Z:
+        //                duplicate.transform.position =
+        //                    new Vector3(
+        //                        duplicate.transform.position.x,
+        //                        duplicate.transform.position.y,
+        //                        previousDuplicate.transform.TransformPoint(modelFace[0]).z);
+        //                break;
+        //            default:
+        //                break;
+        //        }
+
+        //    }
+
+        //generatenormally:;
+
+        //    previousDuplicate = duplicate;
+
+        //    uniqueConditionCount = 0;
+
+        //}
+        //else
+        //{
+        //    uniqueConditionCount++;
+        //}
+    }
+
 }

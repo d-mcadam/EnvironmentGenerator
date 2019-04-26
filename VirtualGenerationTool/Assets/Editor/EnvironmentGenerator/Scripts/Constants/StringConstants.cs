@@ -8,6 +8,10 @@ public class StringConstants {
     //constant tags
     public const string BaseTerrainTag = "Base Terrain";
 
+    //constant layers
+    public const string ObjectModelTag = "Model";
+    public const string BaseObjectTag = "BaseObject";
+
     //constant strings
     public const string Create = "Create";
     public const string Error = "Error";
@@ -32,6 +36,10 @@ public class StringConstants {
     //error messages
     public const string Error_ContinousLoopError = "Continous Loop Error Occurred (this is a custom message)";
 
+    //object names
+    public const string SceneCameraName = "SceneCamera";
+    public const string RestrictedAreas = "RestrictedAreas";
+    public const string DuplicateText = " (duplicate)";
 
     //Model prefab names
     public const string LargeIndustrial = "LargeIndustrial"; //is an L shape building
