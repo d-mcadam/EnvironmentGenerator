@@ -279,7 +279,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         {
             //select a random model (generator 'seed')
             Object obj = models[Random.Range(0, models.Length)];
-
+            
             //give it a starting position
             VectorBoolReturn startVector = GlobalMethods.StartingVector(new Vector3(), _terrainTarget.terrainData.size, _terrainTarget);
             if (!startVector.OperationSuccess)
@@ -289,7 +289,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
             }
 
             //instantiate the 'seed' model and initiate the generator
-            GameObject newModel = (GameObject)PrefabUtility.InstantiatePrefab(obj);
+            GameObject newModel = PrefabUtility.InstantiatePrefab(obj) as GameObject;
             newModel.transform.position = startVector.Vector;
             newModel.transform.rotation = Quaternion.Euler(new Vector3(0, Random.Range(0, 360), 0));
 
@@ -301,21 +301,17 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
             //save a reference of the previously generated object
             GameObject previousModel = newModel;        //groupTotal starts at 1
-            GameObject previousDuplicate = null;
 
             //series generation loop
             for (int seriesQuantity = 1; seriesQuantity < _maximumNumberInSeriesOrCluster; seriesQuantity++)
             {
-                //used to check how many times large industrial building was generated
-                int uniqueConditionCount = 0;
-
                 //check if we have reached the maximum, exit full generation loop if so
                 if (seriesQuantity + currentTotal >= _maximumNumberOfObjects)
                     goto finishedgeneration;
 
                 //continue selecting models to generate in series
                 Object newObject = models[Random.Range(0, models.Length - 1)];
-                
+
                 //check if new model fits parameters
                 _loopFailCount = 0;
                 bool loopSuccess = false;
@@ -344,97 +340,13 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                     if (ModelWithinParameters(previousModel, newModel))
                     {
                         loopSuccess = true;
-
-                        //general rule #1
-                        //if generated large industrial, skip opposing building this turn,
-                        //but be sure to adjust the next opposing model accordingly
-                        if (newModel.name != StringConstants.LargeIndustrial)
-                        {
-                            GameObject duplicate = DuplicateNewModel(newObject, newModel);
-
-                            //general rule #2
-                            //if the previous model was a large industrial building (so an opposing model wasnt generated last loop),
-                            //adjust this models position accordingly (must account for consecutive large industrial buildings 
-                            //and any previous duplicate size)
-
-                            if (previousModel.name == StringConstants.LargeIndustrial)
-                            {
-                                if (previousDuplicate == null)
-                                    goto generatenormally;
-
-                                //get all the model corners for the previous duplicate
-                                List<Vector3> modelCorners = GlobalMethods.FindEdgeCorners(GlobalMethods.SortMeshVerticesToLineArrays(previousDuplicate));
-
-                                //determine facing direction
-                                AxisDirection direction = AxisDirection.X;
-                                bool positiveDirection = false;
-                                if (uniqueConditionCount % 4 == 0)
-                                {
-
-                                    positiveDirection = false;
-                                    direction = AxisDirection.Z;
-
-                                }
-                                else if (uniqueConditionCount % 3 == 0)
-                                {
-
-                                    positiveDirection = false;
-                                    direction = AxisDirection.X;
-
-                                }
-                                else if (uniqueConditionCount % 2 == 0)
-                                {
-
-                                    positiveDirection = true;
-                                    direction = AxisDirection.Z;
-
-                                }
-                                else //assume: uniqueConditionCount % 1 == 0
-                                {
-
-                                    positiveDirection = true;
-                                    direction = AxisDirection.X;
-
-                                }
-
-                                List<Vector3> modelFace = GlobalMethods.FindModelFaceInAxisDirection(modelCorners, direction, positiveDirection);
-
-                                switch (direction)
-                                {
-                                    case AxisDirection.X:
-                                        duplicate.transform.position = 
-                                            new Vector3(
-                                                previousDuplicate.transform.TransformPoint(modelFace[0]).x, 
-                                                duplicate.transform.position.y, 
-                                                duplicate.transform.position.z);
-                                        break;
-                                    case AxisDirection.Z:
-                                        duplicate.transform.position = 
-                                            new Vector3(
-                                                duplicate.transform.position.x, 
-                                                duplicate.transform.position.y, 
-                                                previousDuplicate.transform.TransformPoint(modelFace[0]).z);
-                                        break;
-                                    default:
-                                        break;
-                                }
-
-                            }
-
-                        generatenormally:;
-
-                            previousDuplicate = duplicate;
-
-                            uniqueConditionCount = 0;
-
-                        }
-                        else
-                        {
-                            uniqueConditionCount++;
-                        }
-                        
                         previousModel = newModel;
+                        
+                        if (newModel.name != StringConstants.LargeIndustrial)
+                            DuplicateNewModel(newObject, newModel);
 
+                        //currently doesnt work, left code as is to try in future
+                        //RelativeMoveDuplicate(); 
                     }
                     else
                     {
@@ -458,7 +370,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
     finishedgeneration:;
         
     }
-    private GameObject DuplicateNewModel(Object newObject, GameObject newModel)
+    private void DuplicateNewModel(Object newObject, GameObject newModel)
     {
 
         //duplicate model
@@ -472,13 +384,10 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         duplicate.transform.rotation = newModel.transform.rotation;
 
         //translate to opposing sides
-        duplicate.transform.Translate(new Vector3(0.0f, 0.0f, 25.0f));
+        duplicate.transform.Translate(new Vector3(0.0f, 0.0f, 35.0f));//will need adjusting as testing goes on
         duplicate.transform.Rotate(new Vector3(0.0f, 180.0f, 0.0f));
 
-        return duplicate;
-
     }
-
 
     private bool InitialCheckIntersectionForSeriesStart(GameObject newObj)
     {
@@ -755,5 +664,105 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
         return true;
     }
-    
+
+
+
+
+    private void RelativeMoveDuplicate()
+    {
+
+        //GameObject previousDuplicate = null;
+
+        ////used to check how many times large industrial building was generated
+        //int uniqueConditionCount = 0;
+
+        ////general rule #1
+        ////if generated large industrial, skip opposing building this turn,
+        ////but be sure to adjust the next opposing model accordingly
+        //if (newModel.name != StringConstants.LargeIndustrial)
+        //{
+        //    GameObject duplicate = DuplicateNewModel(newObject, newModel);
+
+        //    //general rule #2
+        //    //if the previous model was a large industrial building (so an opposing model wasnt generated last loop),
+        //    //adjust this models position accordingly (must account for consecutive large industrial buildings 
+        //    //and any previous duplicate size)
+
+        //    if (previousModel.name == StringConstants.LargeIndustrial)
+        //    {
+        //        if (previousDuplicate == null)
+        //            goto generatenormally;
+
+        //        //get all the model corners for the previous duplicate
+        //        List<Vector3> modelCorners = GlobalMethods.FindEdgeCorners(GlobalMethods.SortMeshVerticesToLineArrays(previousDuplicate));
+
+        //        //determine facing direction
+        //        AxisDirection direction = AxisDirection.X;
+        //        bool positiveDirection = false;
+        //        if (uniqueConditionCount % 4 == 0)
+        //        {
+
+        //            positiveDirection = false;
+        //            direction = AxisDirection.X;
+
+        //        }
+        //        else if (uniqueConditionCount % 3 == 0)
+        //        {
+
+        //            positiveDirection = false;
+        //            direction = AxisDirection.Z;
+
+        //        }
+        //        else if (uniqueConditionCount % 2 == 0)
+        //        {
+
+        //            positiveDirection = true;
+        //            direction = AxisDirection.X;
+
+        //        }
+        //        else //assume: uniqueConditionCount % 1 == 0
+        //        {
+
+        //            positiveDirection = true;
+        //            direction = AxisDirection.Z;
+
+        //        }
+
+        //        List<Vector3> modelFace = GlobalMethods.FindModelFaceInAxisDirection(modelCorners, direction, positiveDirection);
+
+        //        switch (direction)
+        //        {
+        //            case AxisDirection.X:
+        //                duplicate.transform.position =
+        //                    new Vector3(
+        //                        previousDuplicate.transform.TransformPoint(modelFace[0]).x,
+        //                        duplicate.transform.position.y,
+        //                        duplicate.transform.position.z);
+        //                break;
+        //            case AxisDirection.Z:
+        //                duplicate.transform.position =
+        //                    new Vector3(
+        //                        duplicate.transform.position.x,
+        //                        duplicate.transform.position.y,
+        //                        previousDuplicate.transform.TransformPoint(modelFace[0]).z);
+        //                break;
+        //            default:
+        //                break;
+        //        }
+
+        //    }
+
+        //generatenormally:;
+
+        //    previousDuplicate = duplicate;
+
+        //    uniqueConditionCount = 0;
+
+        //}
+        //else
+        //{
+        //    uniqueConditionCount++;
+        //}
+    }
+
 }
