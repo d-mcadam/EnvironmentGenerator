@@ -293,16 +293,20 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
             newModel.transform.position = startVector.Vector;
             newModel.transform.rotation = Quaternion.Euler(new Vector3(0, Random.Range(0, 360), 0));
 
-            if (!InitialCheckIntersectionForSeriesStart(newModel) || !ModelWithinParameters(newModel))
+            if (!ModelWithinParameters(newModel))
             {
                 DestroyImmediate(newModel);
                 goto cancelledseries;
             }
 
-            DuplicateNewModel(obj, newModel);
+            if (newModel.name != StringConstants.LargeIndustrial)
+                DuplicateNewModel(obj, newModel);
 
             //save a reference of the previously generated object
-            GameObject previousModel = newModel;        //groupTotal starts at 1
+            //groupTotal starts at 1
+            GameObject previousModel = newModel;
+            //null so it isnt instantiated as an empty game object
+            GameObject previousDuplicate = null;
 
             //series generation loop
             for (int seriesQuantity = 1; seriesQuantity < _maximumNumberInSeriesOrCluster; seriesQuantity++)
@@ -342,9 +346,37 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                     if (ModelWithinParameters(previousModel, newModel))
                     {
                         loopSuccess = true;
+                        //save reference to this model
                         previousModel = newModel;
-                        
-                        DuplicateNewModel(newObject, newModel);
+
+                        //used to set previousDuplicate to null if required
+                        GameObject duplicate = null;
+
+                        //check whether we can generate a duplicate
+                        if (newModel.name != StringConstants.LargeIndustrial)
+                        {
+                            //generate a duplicate
+                            duplicate = DuplicateNewModel(newObject, newModel);
+                            
+                            //check if the duplicate satisfies parameters
+                            if (previousDuplicate == null)
+                            {
+                                if (!ModelWithinParameters(duplicate))
+                                {
+                                    DestroyImmediate(duplicate);
+                                }
+                            }
+                            else
+                            {
+                                if (!ModelWithinParameters(previousDuplicate, duplicate))
+                                {
+                                    DestroyImmediate(duplicate);
+                                }
+                            }
+
+                        }
+
+                        previousDuplicate = duplicate;
 
                         //currently doesnt work, left code as is to try in future
                         //RelativeMoveDuplicate(); 
@@ -369,13 +401,20 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         }//end of  _maximumNumberOfObjects loop - full generation loop
 
     finishedgeneration:;
-        
-    }
-    private void DuplicateNewModel(Object newObject, GameObject newModel)
-    {
 
-        if (newModel.name == StringConstants.LargeIndustrial)
-            return;
+        //kill any invisible models
+        foreach (GameObject o in Resources.FindObjectsOfTypeAll(typeof(GameObject)))
+        {
+            if (o.hideFlags == HideFlags.HideInHierarchy)
+            {
+                Debug.Log("found '" + o.name + "'. Destroying...");
+                DestroyImmediate(o);
+            }
+        }
+
+    }
+    private GameObject DuplicateNewModel(Object newObject, GameObject newModel)
+    {
 
         //duplicate model
         GameObject duplicate = (GameObject)PrefabUtility.InstantiatePrefab(newObject);
@@ -390,23 +429,24 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         //translate to opposing sides
         duplicate.transform.Translate(new Vector3(0.0f, 0.0f, 35.0f));//will need adjusting as testing goes on
         duplicate.transform.Rotate(new Vector3(0.0f, 180.0f, 0.0f));
+        
+        return duplicate;
 
     }
 
     private bool InitialCheckIntersectionForSeriesStart(GameObject newObj)
     {
-        foreach (GameObject o in GetAllSceneModels())
+        foreach (GameObject sceneObj in GetAllSceneModels())
         {
-            if (o == newObj)
+            if (sceneObj == newObj)
                 continue;
 
-            MeshRenderer objMesh = o.transform.GetChild(0).GetComponent<MeshRenderer>();
+            MeshRenderer sceneObjMesh = sceneObj.transform.GetChild(0).GetComponent<MeshRenderer>();
             MeshRenderer newObjMesh = newObj.transform.GetChild(0).GetComponent<MeshRenderer>();
 
-            if (newObjMesh.bounds.Intersects(objMesh.bounds))
-            {
+            if (newObjMesh.bounds.Intersects(sceneObjMesh.bounds))
                 return false;
-            }
+
         }
 
         return true;
@@ -414,27 +454,37 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
     private bool CheckIntersectionForNewObjectInSeries(GameObject prevObj, GameObject newObj)
     {
-        foreach (GameObject o in GetAllSceneModels())
+        foreach (GameObject sceneObj in GetAllSceneModels())
         {
-            if (o == newObj || o == prevObj)
+            if (sceneObj == newObj || sceneObj == prevObj)
                 continue;
             
-            MeshRenderer objMesh = o.transform.GetChild(0).GetComponent<MeshRenderer>();
+            MeshRenderer sceneObjMesh = sceneObj.transform.GetChild(0).GetComponent<MeshRenderer>();
             MeshRenderer newObjMesh = newObj.transform.GetChild(0).GetComponent<MeshRenderer>();
 
-            if (newObjMesh.bounds.Intersects(objMesh.bounds))
+            if (newObjMesh.bounds.Intersects(sceneObjMesh.bounds))
                 return false;
             
         }
         
         return true;
     }
-
+    
     private bool ModelWithinParameters(GameObject newObject)
+    {
+        return WithinParameters(newObject) && InitialCheckIntersectionForSeriesStart(newObject);
+    }
+
+    private bool ModelWithinParameters(GameObject previousObject, GameObject newObject)
+    {
+        return WithinParameters(newObject) && CheckIntersectionForNewObjectInSeries(previousObject, newObject);
+    }
+
+    private bool WithinParameters(GameObject newObject)
     {
         //get the models mesh (always getchild at 0) and then its vertices
         Vector3[] vertices = newObject.transform.GetChild(0).transform.GetComponent<MeshFilter>().sharedMesh.vertices;
-        
+
         //check object is within the X and Z bounds of the terrain object
         foreach (Vector3 vertex in vertices)
         {
@@ -443,13 +493,8 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                 return false;
             }
         }
-        
-        return true;
-    }
 
-    private bool ModelWithinParameters(GameObject previousObject, GameObject newObject)
-    {
-        return ModelWithinParameters(newObject) && CheckIntersectionForNewObjectInSeries(previousObject, newObject);
+        return true;
     }
 
     private bool VertexWithinTerrainBounds(Vector3 vertex)
