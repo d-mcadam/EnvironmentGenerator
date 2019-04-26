@@ -299,6 +299,8 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                 goto cancelledseries;
             }
 
+            DuplicateNewModel(obj, newModel);
+
             //save a reference of the previously generated object
             GameObject previousModel = newModel;        //groupTotal starts at 1
 
@@ -342,8 +344,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
                         loopSuccess = true;
                         previousModel = newModel;
                         
-                        if (newModel.name != StringConstants.LargeIndustrial)
-                            DuplicateNewModel(newObject, newModel);
+                        DuplicateNewModel(newObject, newModel);
 
                         //currently doesnt work, left code as is to try in future
                         //RelativeMoveDuplicate(); 
@@ -372,6 +373,9 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
     }
     private void DuplicateNewModel(Object newObject, GameObject newModel)
     {
+
+        if (newModel.name == StringConstants.LargeIndustrial)
+            return;
 
         //duplicate model
         GameObject duplicate = (GameObject)PrefabUtility.InstantiatePrefab(newObject);
