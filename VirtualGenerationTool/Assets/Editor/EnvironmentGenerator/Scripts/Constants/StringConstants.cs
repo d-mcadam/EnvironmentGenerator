@@ -41,6 +41,10 @@ public class StringConstants {
     public const string RestrictedAreas = "RestrictedAreas";
     public const string DuplicateText = " (duplicate)";
 
+    //predefined event command names
+    public const string ObjectSelectorClosed = "ObjectSelectorClosed";
+    public const string ObjectSelectorUpdated = "ObjectSelectorUpdated";
+
     //Model prefab names
     public const string LargeIndustrial = "LargeIndustrial"; //is an L shape building
     public const string MedApartment = "MedApartment";
@@ -51,5 +55,7 @@ public class StringConstants {
     public const string XLargeOffice = "XLargeOffice"; //is triangular and excessively large compared to other models (currently removed)
     public const string XSmallOffice = "XSmallOffice";
 
+    //control IDs
+    public const int ModelPreviewControlID = 10;
 
 }

@@ -5,6 +5,10 @@ using UnityEditor;
 
 public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 {
+    //editor to modify game objects
+    Editor _objectEditor;
+
+    //target terrain to generate on
     private Terrain _terrainTarget;
 
     //possibly make this an editable list
@@ -40,6 +44,27 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
         CreateSpace(4);
 
         CreateGeneratorButtons();
+
+        CreateSpace(14);
+        
+        if (GUILayout.Button("test preview window creator"))
+        {
+
+            GameObject gameObject = null;
+
+            EditorGUIUtility.ShowObjectPicker<GameObject>(gameObject, false, "", StringConstants.ModelPreviewControlID);
+        }
+
+        if (Event.current.commandName == "ObjectSelectorClosed" && 
+            EditorGUIUtility.GetObjectPickerObject() != null && 
+            EditorGUIUtility.GetObjectPickerControlID() == StringConstants.ModelPreviewControlID)
+        {
+            if (_objectEditor == null)
+                _objectEditor = Editor.CreateEditor(EditorGUIUtility.GetObjectPickerObject());
+            
+            _objectEditor.OnPreviewGUI(GUILayoutUtility.GetRect(200, 200), EditorStyles.whiteBoldLabel);
+        }
+
     }
     private void CreateSpace(int space)
     {
