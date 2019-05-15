@@ -156,7 +156,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
             _landRestrictionDrawingEnabled = false;
             //could this be called only once when section folds?
-            if (_restrictedAreas.Length > 0)
+            if (_restrictedAreas != null || _restrictedAreas.Length > 0)
                 DestroyAllLandRestrictionObjects();
 
         }
@@ -510,7 +510,7 @@ public class GenerateEnvironmentOnTerrainWindow : EditorWindow
 
     private bool VertexWithinRectBounds(Vector3 vertex)
     {
-        if (_restrictedAreas.Length < 1)
+        if (_restrictedAreas == null || _restrictedAreas.Length < 1)
             return true;
 
         foreach (Rect rect in _restrictedAreas)
